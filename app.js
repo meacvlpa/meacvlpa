@@ -118,7 +118,7 @@ async function askQuestion(){
   finally{busy=false;sendButton.disabled=false;sendButton.textContent='↑';}
 }
 sendButton.addEventListener('click',askQuestion);
-questionInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();askQuestion();}});
+questionInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion();}});
 document.getElementById('newNotebook').addEventListener('click',()=>{
   const name=prompt('Name your notebook:');if(!name||!name.trim())return;
   const b=document.createElement('button');b.className='notebook-link';b.innerHTML='<span class="notebook-dot"></span><span></span>';b.querySelector('span:last-child').textContent=name.trim();
