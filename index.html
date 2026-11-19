@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f1e9">
+  <title>PACIANA Research Notebook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">P</span><span><strong>PACIANA</strong><small>RESEARCH NOTEBOOK</small></span></a>
+      <button class="new-notebook" id="newNotebook"><span>＋</span> New notebook</button>
+      <div class="side-label">WORKSPACE</div>
+      <nav><a class="nav-item active" href="#"><span>▤</span> All notebooks</a><a class="nav-item" href="#sources"><span>◫</span> My sources</a><a class="nav-item" href="#notes"><span>✎</span> Research notes</a></nav>
+      <div class="side-label notebook-label">YOUR NOTEBOOKS</div>
+      <div id="notebookList" class="notebook-list"><button class="notebook-link selected"><span class="notebook-dot"></span><span>Pacianus of Barcelona</span></button></div>
+      <div class="sidebar-bottom"><div class="profile-avatar">KR</div><div><strong>Research workspace</strong><small>Personal study</small></div><span class="settings">⚙</span></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="currentNotebook">Pacianus of Barcelona</strong></div><div class="top-actions"><span class="status"><i></i> Local workspace</span><button class="icon-button" title="Help">?</button></div></header>
+      <section class="welcome">
+        <div class="eyebrow">PATRISTIC & THEOLOGICAL STUDIES</div>
+        <h1>Think deeply.<br><em>Read the sources.</em></h1>
+        <p>A dedicated space for reading, questioning, and connecting the voices of the Church Fathers.</p>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="panel sources-panel" id="sources">
+          <div class="panel-heading"><div><div class="eyebrow">YOUR LIBRARY</div><h2>Sources</h2></div><span class="count" id="sourceCount">0 sources</span></div>
+          <div class="dropzone" id="dropzone"><div class="upload-icon">↑</div><strong>Add sources to your notebook</strong><p>Upload primary texts, articles, and research documents.</p><label class="upload-button" for="fileInput">＋ Upload documents</label><input id="fileInput" type="file" multiple accept=".pdf,.txt,.md,.doc,.docx"/></div>
+          <div class="source-list" id="sourceList"><div class="empty-state">Your sources will appear here.</div></div>
+          <div class="source-hint">Supported in this prototype: PDF, TXT, and Markdown. DOCX processing will be added in the next stage.</div>
+        </div>
+
+        <div class="panel studio-panel">
+          <div class="panel-heading"><div><div class="eyebrow">AI RESEARCH STUDIO</div><h2>Ask your sources</h2></div><span class="beta">PREVIEW</span></div>
+          <div class="chat-intro"><div class="sparkle">✳</div><h3>What would you like to understand?</h3><p>Ask questions across your sources and build an argument grounded in the texts.</p></div>
+          <div class="suggestions"><button class="suggestion">Summarize the main arguments in my sources</button><button class="suggestion">Compare the authors' understanding of penance</button><button class="suggestion">Find passages about spiritual healing</button></div>
+          <div class="chat-compose"><textarea id="questionInput" placeholder="Ask a question about your sources..." rows="2"></textarea><button id="sendQuestion" aria-label="Send question">↑</button></div>
+          <div class="api-note"><span>✧</span> AI answers will be enabled after connecting a secure AI backend. Your API key will never be placed in this browser.</div>
+          <div id="chatMessages" class="chat-messages"></div>
+        </div>
+      </section>
+
+      <section class="panel notes-panel" id="notes">
+        <div class="panel-heading"><div><div class="eyebrow">YOUR THINKING</div><h2>Research notes</h2></div><span class="count">Private workspace</span></div>
+        <textarea id="researchNotes" class="notes-editor" placeholder="Record observations, questions, references, and emerging arguments..."></textarea>
+        <div class="notes-footer"><span id="saveStatus">Notes are saved in this browser.</span><span>Keep thinking with the sources.</span></div>
+      </section>
+      <footer>PER FONTES AD VERITATEM <span>·</span> PACIANA Research Notebook</footer>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
