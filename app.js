@@ -47,6 +47,32 @@ function splitText(text,page=null){
   for(let i=0;i<clean.length;i+=size){const part=clean.slice(i,i+size).trim();if(part)chunks.push({page,text:part});}
   return chunks;
 }
+let ocrWorkerPromise=null;
+async function getOcrWorker(){
+  if(!window.Tesseract)throw new Error('Modul OCR gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');
+  if(!ocrWorkerPromise){
+    ocrWorkerPromise=window.Tesseract.createWorker('eng',1,{
+      logger:message=>{
+        if(message.status==='recognizing text'){
+          const percent=Math.round((message.progress||0)*100);
+          document.getElementById('sourceStatus').textContent='OCR sedang mengenali teks… '+percent+'%';
+        }
+      }
+    });
+  }
+  return ocrWorkerPromise;
+}
+async function recognizePdfPage(page,pageNumber){
+  const viewport=page.getViewport({scale:1.6});
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+  const context=canvas.getContext('2d',{willReadFrequently:true});
+  await page.render({canvasContext:context,viewport}).promise;
+  const worker=await getOcrWorker();
+  const result=await worker.recognize(canvas);
+  canvas.width=0;canvas.height=0;
+  return (result.data.text||'').trim();
+}
 async function extractFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='txt'||ext==='md'){return splitText(await file.text());}
@@ -55,11 +81,19 @@ async function extractFile(file){
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
     const chunks=[];
+    let ocrPages=0;
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);const content=await page.getTextContent();
-      const text=content.items.map(x=>x.str||'').join(' ');
+      let text=content.items.map(x=>x.str||'').join(' ').trim();
+      // OCR only pages without a usable text layer; preserve selectable text on other pages.
+      if(text.replace(/\\s/g,'').length<20){
+        ocrPages++;
+        document.getElementById('sourceStatus').textContent='Mengenali halaman '+p+' dari '+pdf.numPages+' dengan OCR…';
+        text=await recognizePdfPage(page,p);
+      }
       chunks.push(...splitText(text,p));
     }
+    if(ocrPages)document.getElementById('sourceStatus').textContent='OCR selesai pada '+ocrPages+' halaman. Menyiapkan sumber…';
     return chunks;
   }
   if(ext==='docx'){
@@ -79,7 +113,7 @@ async function addFiles(files){
     const status=document.getElementById('sourceStatus');status.textContent='Mengekstrak '+file.name+'…';
     try{
       const chunks=await extractFile(file);
-      if(!chunks.length){alert('Tidak ditemukan teks yang dapat dipilih dalam '+file.name+'. PDF hasil pemindaian memerlukan OCR yang belum tersedia.');continue;}
+      if(!chunks.length){alert('PACIANA belum berhasil mengenali teks dalam '+file.name+'. Periksa kualitas pemindaian atau gunakan PDF yang lebih jelas.');continue;}
       sources.push({name:file.name,size:file.size,ext:ext.toUpperCase(),chunks});
       renderSources();
       saveActiveNotebook();
