@@ -13,7 +13,7 @@ const MAX_TOTAL_CHARS=100000;
 function renderSources(){
   sourceCount.textContent=sources.length+' sumber';
   if(!sources.length){sourceList.innerHTML='<div class="empty-state">Sumber Anda akan muncul di sini.</div>';return;}
-  sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' bagian teks</small><div class="source-actions"><button type="button" data-source-action="view" data-index="'+i+'">Lihat isi</button><button type="button" data-source-action="copy" data-index="'+i+'">Salin teks</button><button type="button" data-source-action="notes" data-index="'+i+'">Ke catatan</button></div></div><button class="remove-source" data-remove-index="'+i+'" aria-label="Hapus sumber">×</button></div>').join('');
+  sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' bagian teks</small><div class="source-actions"><button type="button" data-source-action="view" data-index="'+i+'">Lihat isi</button><button type="button" data-source-action="copy" data-index="'+i+'">Salin teks</button></div></div><button class="remove-source" data-remove-index="'+i+'" aria-label="Hapus sumber">×</button></div>').join('');
 }
 const sourceViewer=document.getElementById('sourceViewer');
 const sourceViewerTitle=document.getElementById('sourceViewerTitle');
