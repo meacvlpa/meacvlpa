@@ -161,7 +161,7 @@ module.exports = async function handler(req, res) {
     catch { return send(res, 502, { error: "The AI response could not be parsed for evidence verification. Please try again." }); }
 
     function normalizeForMatch(value) {
-      return String(value || "").replace(/\\s+/g, " ").trim();
+      return String(value || "").replace(/\s+/g, " ").trim();
     }
     const verifiedClaims = [];
     const verifiedEvidence = [];
@@ -171,7 +171,7 @@ module.exports = async function handler(req, res) {
       const validEvidence = [];
       for (const proof of claim.evidence) {
         if (!proof || typeof proof.marker !== "string" || typeof proof.quote !== "string") continue;
-        const match = proof.marker.match(/^S(\\d+)$/);
+        const match = proof.marker.match(/^S(\d+)$/);
         if (!match) continue;
         const index = Number(match[1]) - 1;
         if (!Number.isInteger(index) || index < 0 || index >= relevant.length) continue;
@@ -197,8 +197,8 @@ module.exports = async function handler(req, res) {
     });
     const note = typeof parsed.answer_note === "string" ? parsed.answer_note.trim() : "";
     const answer = answerParts.length
-      ? answerParts.join("\\n\\n") + (note ? "\\n\\n" + note : "")
-      : "Sumber yang disediakan belum memberikan bukti yang cukup untuk menjawab pertanyaan ini." + (note ? "\\n\\n" + note : "");
+      ? answerParts.join("\n\n") + (note ? "\n\n" + note : "")
+      : "Sumber yang disediakan belum memberikan bukti yang cukup untuk menjawab pertanyaan ini." + (note ? "\n\n" + note : "");
     const citations = relevant
       .map((item,index)=>({ marker:"S"+(index+1), source:item.name, page:item.page }))
       .filter(item=>usedMarkers.has(item.marker));
