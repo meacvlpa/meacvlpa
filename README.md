@@ -14,8 +14,9 @@ A source-grounded research workspace for Patristics and theology.
 - Strict source-only answering: uploaded excerpts are the exclusive factual authority; the model must not use pretrained/general knowledge to fill gaps.
 - AI role is limited to semantic organization, paraphrase, comparison, synthesis, translation when requested, and academic formatting of claims supported by the supplied excerpts.
 - Structured claim-by-claim output: each claim must include a verbatim evidence quotation and source marker.
-- Server-side exact-quote verification: a claim is displayed only when its quoted evidence can be found in the retrieved source excerpt; unmatched claims are excluded.
-- The interface displays the exact evidence quotations used for each answer.
+- Server-side exact-quote verification: a claim proceeds only when its verbatim quotation can be found in the cited retrieved source excerpt.
+- A second, independent Responses API call performs a semantic entailment audit. It checks whether the cited passage actually supports every substantive part of the claim; uncertain, partial, merely related, or unsupported claims are rejected (fail-closed).
+- The interface displays the exact evidence quotations and reports how many claims passed quote matching and semantic review.
 - Research notes saved in the current browser.
 
 ## Deploy on Vercel
@@ -54,7 +55,8 @@ OPENAI_MODEL=gpt-4.1-mini
 - PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers, so citations identify the source without a page.
 - The model is instructed to avoid all outside knowledge. Answers are returned as structured atomic claims with exact quotations. The server checks that each quotation occurs in the retrieved source text and excludes claims without a matching quotation. This exact-string check verifies that the quotation exists, not that the model's interpretation is logically entailed by it; academic review against the original edition remains necessary.
 - Retrieval currently uses lexical term matching. A relevant passage may fail to be retrieved if it uses different vocabulary; therefore, an answer that says evidence was not found means it was not found in the retrieved excerpts, not necessarily that no such evidence exists anywhere in the uploaded corpus.
-- Exact-quote verification does not establish semantic entailment. A quotation may exist but still be insufficient to support the generated interpretation; verify scholarly interpretations and translations manually.
+- Semantic verification is an AI-assisted second opinion, not a formal proof of entailment and not a substitute for scholarly reading. The verifier may make mistakes or share model limitations; verify important interpretations, translations, and textual arguments against the original edition.
+- The semantic audit uses a second model request, so it increases latency and API cost. It can be configured separately with OPENAI_VERIFIER_MODEL; otherwise it uses OPENAI_MODEL or the default model.
 - Notes and notebook selections are currently browser-local; there is no login or cloud synchronization.
 - A lightweight per-instance rate limit is included. Add authentication and stronger abuse controls before public launch.
 
@@ -64,5 +66,5 @@ OPENAI_MODEL=gpt-4.1-mini
 2. Embedding-based semantic retrieval and hybrid search.
 3. OCR for scanned books and articles.
 4. Bibliography metadata (author, title, editor, series, publication, year).
-5. Stronger semantic entailment review of each claim against its evidence, plus Latin/Greek text alignment and translation comparison.
+5. Evaluation tests for semantic verification (supported, contradicted, partially supported, and unrelated claim cases), then Latin/Greek text alignment and translation comparison.
 6. Exportable notes and citation formats.
