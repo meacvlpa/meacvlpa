@@ -290,18 +290,27 @@ module.exports = async function handler(req, res) {
     const answer = answerParts.length
       ? answerParts.join("\n\n")
       : "Sumber yang disediakan belum memberikan bukti yang cukup untuk menjawab pertanyaan ini.";
+    const semanticMarkers = new Set(semanticallyVerifiedClaims.flatMap(claim=>claim.markers));
     const citations = relevant
       .map((item,index)=>({ marker:"S"+(index+1), source:item.name, page:item.page }))
-      .filter(item=>usedMarkers.has(item.marker));
-    const approvedEvidence = verifiedEvidence.filter(item=>semanticMarkers.has(item.marker));\n    const uniqueEvidence = approvedEvidence.filter((item,index,array)=>array.findIndex(x=>x.marker===item.marker && x.quote===item.quote)===index);
+      .filter(item=>semanticMarkers.has(item.marker));
+    const approvedEvidence = verifiedEvidence.filter(item=>semanticMarkers.has(item.marker));
+    const uniqueEvidence = approvedEvidence.filter((item,index,array)=>array.findIndex(x=>x.marker===item.marker && x.quote===item.quote)===index);
     return send(res, 200, {
       answer,
-      claims: verifiedClaims,
+      claims: semanticallyVerifiedClaims,
       evidence: uniqueEvidence,
       citations,
-      grounded: verifiedClaims.length > 0,
-      verification: { method: "exact_quote_match", verified_claims: verifiedClaims.length, rejected_or_unsupported_claims: Math.max(0, (Array.isArray(parsed.claims) ? parsed.claims.length : 0) - verifiedClaims.length) },
-      model: data.model || process.env.OPENAI_MODEL || "gpt-4.1-mini"
+      grounded: semanticallyVerifiedClaims.length > 0,
+      verification: {
+        method: "exact_quote_match_plus_semantic_entailment_audit",
+        exact_quote_claims: verifiedClaims.length,
+        semantically_supported_claims: semanticallyVerifiedClaims.length,
+        rejected_by_semantic_audit: semanticRejectedCount,
+        rejected_or_unsupported_claims: Math.max(0, (Array.isArray(parsed.claims) ? parsed.claims.length : 0) - semanticallyVerifiedClaims.length)
+      },
+      model: data.model || process.env.OPENAI_MODEL || "gpt-4.1-mini",
+      verifier_model: process.env.OPENAI_VERIFIER_MODEL || process.env.OPENAI_MODEL || "gpt-4.1-mini"
     });
   } catch (error) {
     console.error("PACIANA chat error:", error);
