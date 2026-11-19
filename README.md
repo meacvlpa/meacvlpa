@@ -9,7 +9,7 @@ A source-grounded research workspace for Patristics and theology.
 - Responsive notebook interface.
 - Upload and extract selectable-text PDF, DOCX, TXT, and Markdown files in the browser.
 - PDF extraction preserves page numbers.
-- Basic lexical retrieval ranks passages relevant to the question.
+- Hybrid retrieval combines multilingual semantic embeddings (`text-embedding-3-small`) with lexical ranking through reciprocal-rank fusion; falls back to lexical retrieval if embedding service is unavailable.
 - OpenAI Responses API integration through a server-side Vercel Function.
 - Strict source-only answering: uploaded excerpts are the exclusive factual authority; the model must not use pretrained/general knowledge to fill gaps.
 - AI role is limited to semantic organization, paraphrase, comparison, synthesis, translation when requested, and academic formatting of claims supported by the supplied excerpts.
@@ -50,11 +50,11 @@ OPENAI_MODEL=gpt-4.1-mini
 
 - This is an early MVP, not yet a full NotebookLM replacement.
 - Uploaded document text is extracted in the browser and sent with each question; files are not permanently uploaded to a database.
-- Retrieval is basic lexical matching, not embeddings/vector search.
+- Embedding retrieval currently computes embeddings for the question and all extracted chunks on each request; this adds API cost and latency. It is not yet a persistent vector index and does not cache document embeddings.
 - Scanned PDFs need OCR and are not yet supported.
 - PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers, so citations identify the source without a page.
 - The model is instructed to avoid all outside knowledge. Answers are returned as structured atomic claims with exact quotations. The server checks that each quotation occurs in the retrieved source text and excludes claims without a matching quotation. This exact-string check verifies that the quotation exists, not that the model's interpretation is logically entailed by it; academic review against the original edition remains necessary.
-- Retrieval currently uses lexical term matching. A relevant passage may fail to be retrieved if it uses different vocabulary; therefore, an answer that says evidence was not found means it was not found in the retrieved excerpts, not necessarily that no such evidence exists anywhere in the uploaded corpus.
+- Hybrid retrieval improves cross-language discovery but does not guarantee recall. A relevant passage may still fail to rank in the top retrieved excerpts; therefore, an answer that says evidence was not found means it was not found in the retrieved excerpts, not necessarily that no such evidence exists anywhere in the uploaded corpus. The interface reports whether hybrid retrieval or a fallback was used.
 - Semantic verification is an AI-assisted second opinion, not a formal proof of entailment and not a substitute for scholarly reading. The verifier may make mistakes or share model limitations; verify important interpretations, translations, and textual arguments against the original edition.
 - The semantic audit uses a second model request, so it increases latency and API cost. It can be configured separately with OPENAI_VERIFIER_MODEL; otherwise it uses OPENAI_MODEL or the default model.
 - Notes and notebook selections are currently browser-local; there is no login or cloud synchronization.
@@ -63,7 +63,7 @@ OPENAI_MODEL=gpt-4.1-mini
 ## Planned next stages
 
 1. Persistent notebooks and source storage (Supabase).
-2. Embedding-based semantic retrieval and hybrid search.
+2. Persistent vector index with cached document embeddings, plus retrieval evaluation for Latin/Greek/Italian/Indonesian queries.
 3. OCR for scanned books and articles.
 4. Bibliography metadata (author, title, editor, series, publication, year).
 5. Evaluation tests for semantic verification (supported, contradicted, partially supported, and unrelated claim cases), then Latin/Greek text alignment and translation comparison.
