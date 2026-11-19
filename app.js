@@ -218,7 +218,6 @@ async function askQuestion(){
       try{await copySourceText(fullText);addMessage('assistant','Teks lengkap '+source.name+' telah disalin ke clipboard.');}
       catch(error){openSourceViewer(source.name,fullText);addMessage('assistant','Silakan salin teks lengkap dokumen dari jendela yang terbuka.');}
     }else{
-    }else{
       openSourceViewer(source.name,fullText);
       addMessage('assistant','Saya membuka teks lengkap '+source.name+'. Teks ini berasal dari hasil ekstraksi lokal dokumen, bukan jawaban yang dihasilkan AI.');
     }
