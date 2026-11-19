@@ -46,6 +46,82 @@ function rankChunks(question, sources) {
   return chunks.sort((a,b)=>b.score-a.score).slice(0,10);
 }
 
+
+function cosineSimilarity(a, b) {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB) || 1);
+}
+
+async function hybridRetrieve(question, sources) {
+  const candidates = [];
+  for (const source of sources) {
+    if (!source || typeof source.name !== "string" || !Array.isArray(source.chunks)) continue;
+    for (const chunk of source.chunks) {
+      if (!chunk || typeof chunk.text !== "string") continue;
+      candidates.push({
+        name: source.name.slice(0, 180),
+        page: Number.isInteger(chunk.page) ? chunk.page : null,
+        text: chunk.text.slice(0, 5000)
+      });
+    }
+  }
+  if (!candidates.length) return { chunks: [], mode: "none" };
+
+  const queryTerms = [...new Set(terms(question))];
+  const lexical = candidates.map((item, index) => {
+    const counts = new Map();
+    for (const term of terms(item.text)) counts.set(term, (counts.get(term) || 0) + 1);
+    let score = 0;
+    for (const term of queryTerms) score += Math.min(counts.get(term) || 0, 4);
+    return { index, score };
+  }).filter(x => x.score > 0).sort((a,b) => b.score - a.score);
+  const lexicalRank = new Map(lexical.map((item, rank) => [item.index, rank + 1]));
+
+  if (!process.env.OPENAI_API_KEY) {
+    return { chunks: lexical.slice(0, 10).map(x => ({ ...candidates[x.index], score: x.score })), mode: "lexical_only" };
+  }
+
+  try {
+    const embeddingResponse = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + process.env.OPENAI_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
+        input: [question, ...candidates.map(item => item.text)],
+        encoding_format: "float"
+      })
+    });
+    const embeddingData = await embeddingResponse.json();
+    if (!embeddingResponse.ok || !Array.isArray(embeddingData.data) || embeddingData.data.length !== candidates.length + 1) {
+      throw new Error(embeddingData?.error?.message || "Embedding response was incomplete.");
+    }
+    const queryVector = embeddingData.data[0].embedding;
+    const semanticRanked = candidates.map((item, index) => ({
+      index,
+      similarity: cosineSimilarity(queryVector, embeddingData.data[index + 1].embedding)
+    })).sort((a,b) => b.similarity - a.similarity);
+    const semanticRank = new Map(semanticRanked.map((item, rank) => [item.index, rank + 1]));
+    const ranked = candidates.map((item, index) => {
+      const lRank = lexicalRank.get(index);
+      const sRank = semanticRank.get(index);
+      const fusedScore = (1 / (60 + sRank)) + (lRank ? 1 / (60 + lRank) : 0);
+      return { ...item, score: fusedScore, semantic_score: semanticRanked.find(x => x.index === index).similarity, lexical_rank: lRank || null };
+    }).sort((a,b) => b.score - a.score);
+    return { chunks: ranked.slice(0, 10), mode: "hybrid_lexical_semantic" };
+  } catch (error) {
+    console.error("PACIANA embedding retrieval fallback:", error);
+    return { chunks: lexical.slice(0, 10).map(x => ({ ...candidates[x.index], score: x.score })), mode: "lexical_fallback" };
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
@@ -76,9 +152,9 @@ module.exports = async function handler(req, res) {
       return send(res, 413, { error: "Your source selection is too large for one question. Use fewer or shorter documents." });
     }
 
-    const relevant = rankChunks(question, sources);
+    const retrieval = await hybridRetrieve(question, sources);\n    const relevant = retrieval.chunks;
     if (!relevant.length) {
-      return send(res, 200, { answer: "I could not find passages that clearly match your question in the extracted text of the sources provided. Try different terms or add a more relevant source.", citations: [], grounded: false });
+      return send(res, 200, { answer: "I could not find passages that clearly match your question in the extracted text of the sources provided. Try different terms or add a more relevant source.", citations: [], grounded: false, retrieval: { mode: retrieval.mode } });
     }
     if (!process.env.OPENAI_API_KEY) return send(res, 503, { error: "The backend is ready, but OPENAI_API_KEY has not been configured in Vercel yet." });
 
@@ -310,7 +386,8 @@ module.exports = async function handler(req, res) {
         rejected_or_unsupported_claims: Math.max(0, (Array.isArray(parsed.claims) ? parsed.claims.length : 0) - semanticallyVerifiedClaims.length)
       },
       model: data.model || process.env.OPENAI_MODEL || "gpt-4.1-mini",
-      verifier_model: process.env.OPENAI_VERIFIER_MODEL || process.env.OPENAI_MODEL || "gpt-4.1-mini"
+      verifier_model: process.env.OPENAI_VERIFIER_MODEL || process.env.OPENAI_MODEL || "gpt-4.1-mini",
+      retrieval: { mode: retrieval.mode, embedding_model: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small", retrieved_chunks: relevant.length }
     });
   } catch (error) {
     console.error("PACIANA chat error:", error);
