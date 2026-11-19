@@ -16,7 +16,7 @@
       <a class="brand" href="#"><span class="brand-mark">P</span><span><strong>PACIANA</strong><small>BUKU CATATAN RISET</small></span></a>
       <button class="new-notebook" id="newNotebook"><span>＋</span> Notebook baru</button>
       <div class="side-label">RUANG KERJA</div>
-      <nav><a class="nav-item active" href="#"><span>▤</span> Semua notebook</a><a class="nav-item" href="#sources"><span>◫</span> Sumber saya</a><a class="nav-item" href="#notes"><span>✎</span> Catatan riset</a></nav>
+      <nav><a class="nav-item active" href="#"><span>▤</span> Semua notebook</a><a class="nav-item" href="#sources"><span>◫</span> Sumber saya</a></nav>
       <div class="side-label notebook-label">NOTEBOOK ANDA</div>
       <div id="notebookList" class="notebook-list"><button class="notebook-link selected"><span class="notebook-dot"></span><span>Pacianus of Barcelona</span></button></div>
       <div class="sidebar-bottom"><div class="profile-avatar">KR</div><div><strong>Ruang riset</strong><small>Studi pribadi</small></div><span class="settings">⚙</span></div>
@@ -27,14 +27,14 @@
       <section class="welcome"><div class="eyebrow">STUDI PATRISTIK & TEOLOGI</div><h1>Berpikir mendalam.<br><em>Baca sumbernya.</em></h1><p>Ruang khusus untuk membaca, mengajukan pertanyaan, dan menghubungkan pemikiran para Bapa Gereja.</p></section>
       <section class="workspace-grid">
         <div class="panel sources-panel" id="sources">
-          <div class="panel-heading"><div><div class="eyebrow">PERPUSTAKAAN ANDA</div><h2>Sumber</h2></div><span class="count" id="sourceCount">0 sources</span></div>
+          <div class="panel-heading"><div><h2>Pustaka</h2></div><span class="count" id="sourceCount">0 sumber</span></div>
           <div class="dropzone" id="dropzone"><div class="upload-icon">↑</div><strong>Tambahkan sumber ke notebook</strong><p>Unggah teks primer, artikel, dan dokumen penelitian.</p><label class="upload-button" for="fileInput">＋ Unggah dokumen</label><input id="fileInput" type="file" multiple accept=".pdf,.txt,.md,.docx,.doc"/></div>
           <div class="source-list" id="sourceList"><div class="empty-state">Sumber Anda akan muncul di sini.</div></div>
           <div class="source-hint" id="sourceStatus">PDF (teks yang dapat dipilih), DOCX, TXT, dan Markdown. PDF hasil pemindaian memerlukan OCR.</div>
         </div>
         <div class="resize-handle columns-resize" data-resize="columns" role="separator" aria-orientation="vertical" aria-label="Resize sources and research studio" tabindex="0"></div>
         <div class="panel studio-panel">
-          <div class="panel-heading"><div><div class="eyebrow">STUDIO RISET AI</div><h2>Tanyakan kepada sumber</h2></div><span class="beta">BERBASIS SUMBER</span></div>
+          <div class="panel-heading"><div><h2>tanya paciana</h2></div><span class="beta">BERBASIS SUMBER</span></div>
           <div class="chat-intro"><div class="sparkle">✳</div><h3>Apa yang ingin Anda pahami?</h3><p>Jawaban disusun berdasarkan kutipan relevan dari sumber yang Anda unggah.</p></div>
           <div class="suggestions"><button class="suggestion">Ringkas argumen utama dalam sumber saya</button><button class="suggestion">Bandingkan pemahaman para penulis tentang penitensi</button><button class="suggestion">Temukan bagian tentang penyembuhan rohani</button></div>
           <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
@@ -44,7 +44,6 @@
           </div>
         </div>
       </section>
-      <section class="panel notes-panel" id="notes"><div class="panel-heading"><div><div class="eyebrow">CATATAN PEMIKIRAN</div><h2>Catatan riset</h2></div><span class="count">Tersimpan di browser ini</span></div><textarea id="researchNotes" class="notes-editor" placeholder="Catat pengamatan, pertanyaan, referensi, dan argumen yang sedang berkembang..."></textarea><div class="notes-footer"><span id="saveStatus">Catatan disimpan di browser ini.</span><span>Teruslah berpikir bersama sumber-sumber.</span></div></section>
       <footer>PER FONTES AD VERITATEM <span>·</span> Buku Catatan Riset PACIANA</footer>
     </main>
   </div>
@@ -52,7 +51,7 @@
     <section class="source-viewer-dialog">
       <header><div><div class="eyebrow">TEKS DOKUMEN</div><h2 id="sourceViewerTitle">Nama dokumen</h2></div><button type="button" id="closeSourceViewer" aria-label="Tutup">×</button></header>
       <textarea id="sourceViewerText" readonly spellcheck="false" aria-label="Isi lengkap dokumen"></textarea>
-      <footer><span id="viewerStatus">Teks berasal dari hasil ekstraksi dokumen yang diunggah.</span><div><button type="button" id="copyViewerText">Salin teks</button><button type="button" id="addViewerToNotes">Masukkan ke catatan</button></div></footer>
+      <footer><span id="viewerStatus">Teks berasal dari hasil ekstraksi dokumen yang diunggah.</span><div><button type="button" id="copyViewerText">Salin teks</button></div></footer>
     </section>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
