@@ -156,7 +156,7 @@ module.exports = async function handler(req, res) {
     if (!relevant.length) {
       return send(res, 200, { answer: "I could not find passages that clearly match your question in the extracted text of the sources provided. Try different terms or add a more relevant source.", citations: [], grounded: false, retrieval: { mode: retrieval.mode } });
     }
-    if (!process.env.OPENAI_API_KEY) return send(res, 503, { error: "The backend is ready, but OPENAI_API_KEY has not been configured in Vercel yet." });
+    if (!process.env.OPENAI_API_KEY) return send(res, 503, { error: "The backend is ready, but OPENAI_API_KEY has not been configured on the hosting service yet." });
 
     const sourceContext = relevant.map((item, index) => {
       const page = item.page === null ? "page not available" : "page " + item.page;
@@ -391,6 +391,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     console.error("PACIANA chat error:", error);
-    return send(res, 500, { error: "An unexpected server error occurred. Check the Vercel function logs for details." });
+    return send(res, 500, { error: "An unexpected server error occurred. Check the application logs on the hosting service for details." });
   }
 };
