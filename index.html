@@ -48,6 +48,13 @@
       <footer>PER FONTES AD VERITATEM <span>·</span> Buku Catatan Riset PACIANA</footer>
     </main>
   </div>
+  <div class="source-viewer" id="sourceViewer" hidden role="dialog" aria-modal="true" aria-labelledby="sourceViewerTitle">
+    <section class="source-viewer-dialog">
+      <header><div><div class="eyebrow">TEKS DOKUMEN</div><h2 id="sourceViewerTitle">Nama dokumen</h2></div><button type="button" id="closeSourceViewer" aria-label="Tutup">×</button></header>
+      <textarea id="sourceViewerText" readonly spellcheck="false" aria-label="Isi lengkap dokumen"></textarea>
+      <footer><span id="viewerStatus">Teks berasal dari hasil ekstraksi dokumen yang diunggah.</span><div><button type="button" id="copyViewerText">Salin teks</button><button type="button" id="addViewerToNotes">Masukkan ke catatan</button></div></footer>
+    </section>
+  </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
   <script src="app.js"></script>
