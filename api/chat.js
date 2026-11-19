@@ -99,7 +99,7 @@ module.exports = async function handler(req, res) {
       "Use claim_kind 'explicit' only when the source directly states the claim. Use 'interpretation' only for a cautious inference that follows from the cited passage; make its interpretive status clear in the claim text.",
       "Do not add historical, theological, philosophical, linguistic, or bibliographical facts absent from the excerpts.",
       "When sources disagree, state the disagreement as separate claims with their respective evidence. Do not resolve it using outside knowledge.",
-      "If the excerpts do not answer the question, return an empty claims array and explain the evidence gap in answer_note. If only part is answerable, include only supported claims and state the limitation in answer_note.",
+      "If the excerpts do not answer the question, return an empty claims array. If only part is answerable, include only supported claims. Do not add an explanatory note containing claims that are not independently supported by quotations.",
       "Do not invent quotations, page numbers, titles, authors, editions, dates, or bibliographic details."
     ].join("\n");
 
@@ -195,10 +195,9 @@ module.exports = async function handler(req, res) {
       const label = claim.claim_kind === "interpretation" ? "Interpretation terbatas: " : "";
       return label + claim.text + " [" + claim.markers.join("] [") + "]";
     });
-    const note = typeof parsed.answer_note === "string" ? parsed.answer_note.trim() : "";
     const answer = answerParts.length
-      ? answerParts.join("\n\n") + (note ? "\n\n" + note : "")
-      : "Sumber yang disediakan belum memberikan bukti yang cukup untuk menjawab pertanyaan ini." + (note ? "\n\n" + note : "");
+      ? answerParts.join("\n\n")
+      : "Sumber yang disediakan belum memberikan bukti yang cukup untuk menjawab pertanyaan ini.";
     const citations = relevant
       .map((item,index)=>({ marker:"S"+(index+1), source:item.name, page:item.page }))
       .filter(item=>usedMarkers.has(item.marker));
