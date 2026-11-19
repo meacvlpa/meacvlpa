@@ -33,20 +33,10 @@ async function copySourceText(text){
   const copied=document.execCommand('copy');temporary.remove();
   if(!copied)throw new Error('Clipboard tidak tersedia');
 }
-function appendSourceToNotes(name,text){
-  const heading='\n\n---\nTEKS SUMBER: '+name+'\n---\n';
-  notes.value=(notes.value.trimEnd()+heading+text).trimStart();
-  notes.dispatchEvent(new Event('input',{bubbles:true}));
-  closeSourceViewer();
-}
 document.getElementById('closeSourceViewer').addEventListener('click',closeSourceViewer);
 document.getElementById('copyViewerText').addEventListener('click',async()=>{
   try{await copySourceText(sourceViewerText.value);document.getElementById('viewerStatus').textContent='Teks berhasil disalin.';}
   catch(error){document.getElementById('viewerStatus').textContent='Tidak dapat menyalin otomatis. Pilih teks lalu salin secara manual.';}
-});
-document.getElementById('addViewerToNotes').addEventListener('click',()=>{
-  appendSourceToNotes(sourceViewerTitle.textContent,sourceViewerText.value);
-  document.getElementById('sourceStatus').textContent='Isi dokumen ditambahkan ke Catatan Riset.';
 });
 sourceViewer.addEventListener('click',e=>{if(e.target===sourceViewer)closeSourceViewer();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sourceViewer.hidden)closeSourceViewer();});
@@ -109,10 +99,6 @@ sourceList.addEventListener('click',async e=>{
       try{await copySourceText(fullText);document.getElementById('sourceStatus').textContent='Teks '+source.name+' berhasil disalin.';}
       catch(error){openSourceViewer(source.name,fullText);document.getElementById('sourceStatus').textContent='Salin otomatis tidak tersedia. Pilih dan salin teks dari jendela dokumen.';}
     }
-    if(action.dataset.sourceAction==='notes'){
-      appendSourceToNotes(source.name,fullText);
-      document.getElementById('sourceStatus').textContent='Isi '+source.name+' ditambahkan ke Catatan Riset.';
-    }
     return;
   }
   const remove=e.target.closest('[data-remove-index]');
@@ -122,7 +108,7 @@ dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.style.borde
 dropzone.addEventListener('dragleave',()=>dropzone.style.borderColor='');
 dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.style.borderColor='';addFiles(e.dataTransfer.files);});
 
-const notes=document.getElementById('researchNotes');
+const notes=document.createElement('textarea');
 let saveTimer;
 const NOTEBOOKS_KEY='paciana-notebooks-v1';
 let notebooks=[];
@@ -163,7 +149,6 @@ function activateNotebook(id){
   chatMessages.innerHTML=target.chatHTML||'';
   document.getElementById('currentNotebook').textContent=target.name;
   document.getElementById('sourceStatus').textContent=sources.length+' readable source(s) ready for questions.';
-  document.getElementById('saveStatus').textContent='Notes are saved in this browser.';
   renderSources();
   renderNotebookList();
   questionInput.value='';
@@ -179,15 +164,6 @@ activeNotebookId=notebooks[0].id;
 notes.value=notebooks[0].notes||'';
 document.getElementById('currentNotebook').textContent=notebooks[0].name;
 renderNotebookList();
-let saveTimerId;
-notes.addEventListener('input',()=>{
-  document.getElementById('saveStatus').textContent='Menyimpan…';
-  clearTimeout(saveTimerId);
-  saveTimerId=setTimeout(()=>{
-    saveActiveNotebook();
-    document.getElementById('saveStatus').textContent='Tersimpan di browser ini';
-  },350);
-});
 document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{questionInput.value=b.textContent;questionInput.focus();}));
 
 function addMessage(role,text,evidence=[],verification=null,retrieval=null){
@@ -241,9 +217,7 @@ async function askQuestion(){
     if(/salin/.test(command)){
       try{await copySourceText(fullText);addMessage('assistant','Teks lengkap '+source.name+' telah disalin ke clipboard.');}
       catch(error){openSourceViewer(source.name,fullText);addMessage('assistant','Silakan salin teks lengkap dokumen dari jendela yang terbuka.');}
-    }else if(/ke catatan|dalam catatan/.test(command)){
-      appendSourceToNotes(source.name,fullText);
-      addMessage('assistant','Seluruh teks '+source.name+' telah dimasukkan ke Catatan Riset. Tindakan ini menggunakan hasil ekstraksi lokal, tanpa AI.');
+    }else{
     }else{
       openSourceViewer(source.name,fullText);
       addMessage('assistant','Saya membuka teks lengkap '+source.name+'. Teks ini berasal dari hasil ekstraksi lokal dokumen, bukan jawaban yang dihasilkan AI.');
