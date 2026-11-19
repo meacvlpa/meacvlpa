@@ -244,14 +244,16 @@ function addMessage(role,text,evidence=[],verification=null,retrieval=null){
   saveActiveNotebook();
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-function selectChunksForQuestion(question,source){
-  const all=(source.chunks||[]).filter(c=>c&&typeof c.text==='string'&&c.text.trim());
+function selectChunksForQuestion(question,allSources){
+  const all=[];for(const source of allSources)for(const chunk of source.chunks||[])if(chunk&&typeof chunk.text==='string'&&chunk.text.trim())all.push({name:source.name,page:Number.isInteger(chunk.page)?chunk.page:null,text:chunk.text});
   const q=String(question||'').toLocaleLowerCase('id').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const overview=/(tentang\s+apa|apa\s+(isi|pokok|gagasan|tema|topik|inti)|ringkas|rangkum|overview|summari[sz]e|main\s+(idea|theme))/i.test(q);
   let chosen;
   if(overview){chosen=[];const stride=Math.max(1,Math.ceil(all.length/MAX_CHAT_CHUNKS));for(let i=0;i<all.length&&chosen.length<MAX_CHAT_CHUNKS;i+=stride)chosen.push(all[i]);if(all.length&&chosen[chosen.length-1]!==all[all.length-1]&&chosen.length<MAX_CHAT_CHUNKS)chosen.push(all[all.length-1]);}
   else{const words=[...new Set((q.match(/[\p{L}\p{N}]{3,}/gu)||[]))];chosen=all.map(c=>{const body=c.text.toLocaleLowerCase('id');let score=0;for(const w of words)if(body.includes(w))score++;return {...c,score};}).filter(c=>c.score>0).sort((a,b)=>b.score-a.score).slice(0,MAX_CHAT_CHUNKS);}
-  let total=0;return chosen.map(c=>({page:Number.isInteger(c.page)?c.page:null,text:c.text.slice(0,3500)})).filter(c=>{if(total+c.text.length>MAX_CHAT_CHARS)return false;total+=c.text.length;return true;});
+  const grouped=new Map();let total=0;
+  for(const item of chosen){if(total>=MAX_CHAT_CHARS)break;const text=item.text.slice(0,Math.min(3500,MAX_CHAT_CHARS-total));if(!text)continue;if(!grouped.has(item.name))grouped.set(item.name,[]);grouped.get(item.name).push({page:item.page,text});total+=text.length;}
+  return [...grouped.entries()].map(([name,chunks])=>({name,chunks}));
 }
 async function askQuestion(){
   const question=questionInput.value.trim();if(!question||busy)return;
@@ -282,7 +284,7 @@ async function askQuestion(){
   busy=true;sendButton.disabled=true;sendButton.textContent='…';questionInput.value='';addMessage('user',question);
   const loading=document.createElement('div');loading.className='chat-message assistant';loading.textContent='PACIANA sedang membaca bagian-bagian yang relevan…';chatMessages.appendChild(loading);
   try{
-    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:sources.map(s=>({name:s.name,chunks:selectChunksForQuestion(question,s)}))})});
+    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:selectChunksForQuestion(question,sources)})});
     const data=await response.json();loading.remove();
     if(!response.ok)throw new Error(data.error||'Permintaan gagal.');
     const answer=data.answer||'Tidak ada jawaban yang dikembalikan.';
