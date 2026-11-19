@@ -1,0 +1,47 @@
+{
+  "title": "PACIANA semantic evidence benchmark — synthetic source",
+  "notice": "All names, places, events, and wording in this fixture are fictional and created only for software evaluation. This is not a historical source and must never be cited as patristic evidence.",
+  "source": {
+    "marker": "S1",
+    "name": "Synthetic episcopal memorandum (fictional)",
+    "page": 1,
+    "text": "Memorandum of the presbyterial meeting at Valeria. On the first day after the feast, Bishop Aurelian received the men and women who had confessed their faults before the assembly. He instructed them to remain in prayer for three days and to share bread with the poor. On the fourth day, those who had completed the prescribed observance were admitted again to the common prayer. The memorandum names no emperor, gives no year, and says nothing about a council or the construction of public buildings."
+  },
+  "cases": [
+    {
+      "id": "SUPPORTED-01",
+      "category": "fully_supported",
+      "claim": "Bishop Aurelian instructed those who had confessed their faults to remain in prayer for three days.",
+      "expected": "supported",
+      "rationale": "The source states this directly."
+    },
+    {
+      "id": "PARTIAL-01",
+      "category": "partially_supported",
+      "claim": "Bishop Aurelian instructed those who had confessed their faults to pray for three days and fast from all food.",
+      "expected": "unsupported",
+      "rationale": "The three-day prayer is supported, but fasting from all food is not stated. The compound claim must fail as a whole."
+    },
+    {
+      "id": "CONTRADICTED-01",
+      "category": "contradicted",
+      "claim": "Bishop Aurelian instructed the penitents to remain in prayer for forty days.",
+      "expected": "unsupported",
+      "rationale": "The source explicitly specifies three days, not forty."
+    },
+    {
+      "id": "UNRELATED-01",
+      "category": "unrelated",
+      "claim": "Bishop Aurelian ordered the construction of a stone aqueduct outside Valeria.",
+      "expected": "unsupported",
+      "rationale": "The source contains no evidence about an aqueduct or such an order."
+    },
+    {
+      "id": "PLAUSIBLE-ABSENT-01",
+      "category": "historically_plausible_but_absent",
+      "claim": "The meeting at Valeria took place in 381 under Emperor Theodosius I.",
+      "expected": "unsupported",
+      "rationale": "This may sound historically plausible, but the source expressly gives no year and names no emperor."
+    }
+  ]
+}
