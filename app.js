@@ -18,8 +18,18 @@ async function storeNotebookSources(id,value){const db=await openSourceDb();retu
 async function readNotebookSources(id){try{const db=await openSourceDb();return await new Promise((resolve,reject)=>{const tx=db.transaction('notebookSources','readonly');const req=tx.objectStore('notebookSources').get(id);req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);req.onerror=()=>reject(req.error);});}catch(error){console.warn(error);return [];}}
 function renderSources(){
   sourceCount.textContent=sources.length+' sumber';
+  const selectedCount=sources.filter(source=>source.selected!==false).length;
+  const selectAll=document.getElementById('selectAllSources');
+  const selectionCount=document.getElementById('selectionCount');
+  if(selectAll){
+    selectAll.checked=sources.length>0&&selectedCount===sources.length;
+    selectAll.indeterminate=selectedCount>0&&selectedCount<sources.length;
+    selectAll.disabled=sources.length===0;
+    selectAll.setAttribute('aria-checked',selectAll.indeterminate?'mixed':String(selectAll.checked));
+  }
+  if(selectionCount)selectionCount.textContent=selectedCount+' dari '+sources.length+' dipilih untuk konsultasi';
   if(!sources.length){sourceList.innerHTML='<div class="empty-state">Sumber Anda akan muncul di sini.</div>';return;}
-  sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' bagian teks</small><div class="source-actions"><button type="button" data-source-action="view" data-index="'+i+'">Lihat isi</button><button type="button" data-source-action="copy" data-index="'+i+'">Salin teks</button></div></div><button class="remove-source" data-remove-index="'+i+'" aria-label="Hapus sumber">×</button></div>').join('');
+  sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><label class="source-select" title="Gunakan sumber ini untuk konsultasi"><input type="checkbox" data-source-select="'+i+'" aria-label="Pilih '+escapeHtml(f.name)+' untuk konsultasi" '+(f.selected===false?'':'checked')+'><span></span></label><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' bagian teks</small><div class="source-actions"><button type="button" data-source-action="view" data-index="'+i+'">Lihat isi</button><button type="button" data-source-action="copy" data-index="'+i+'">Salin teks</button></div></div><button class="remove-source" data-remove-index="'+i+'" aria-label="Hapus sumber">×</button></div>').join('');
 }
 const sourceViewer=document.getElementById('sourceViewer');
 const sourceViewerTitle=document.getElementById('sourceViewerTitle');
@@ -124,7 +134,7 @@ async function addFiles(files){
     try{
       const chunks=await extractFile(file);
       if(!chunks.length){alert('PACIANA belum berhasil mengenali teks dalam '+file.name+'. Periksa kualitas pemindaian atau gunakan PDF yang lebih jelas.');continue;}
-      sources.push({name:file.name,size:file.size,ext:ext.toUpperCase(),chunks});
+      sources.push({name:file.name,size:file.size,ext:ext.toUpperCase(),chunks,selected:true});
       renderSources();
       saveActiveNotebook();
     }catch(error){alert('Tidak dapat membaca '+file.name+': '+error.message);}
@@ -132,6 +142,20 @@ async function addFiles(files){
   document.getElementById('sourceStatus').textContent=sources.length+' sumber siap digunakan untuk pertanyaan.';
 }
 fileInput.addEventListener('change',e=>{addFiles(e.target.files);fileInput.value='';});
+sourceList.addEventListener('change',e=>{
+  const checkbox=e.target.closest('[data-source-select]');
+  if(!checkbox)return;
+  const source=sources[Number(checkbox.dataset.sourceSelect)];
+  if(!source)return;
+  source.selected=checkbox.checked;
+  renderSources();
+  saveActiveNotebook();
+});
+document.getElementById('selectAllSources').addEventListener('change',e=>{
+  sources.forEach(source=>{source.selected=e.target.checked;});
+  renderSources();
+  saveActiveNotebook();
+});
 sourceList.addEventListener('click',async e=>{
   const action=e.target.closest('[data-source-action]');
   if(action){
@@ -282,10 +306,12 @@ async function askQuestion(){
     return;
   }
   if(!sources.length){addMessage('assistant','Unggah setidaknya satu sumber yang dapat dibaca sebelum mengajukan pertanyaan.');return;}
+  const selectedSources=sources.filter(source=>source.selected!==false);
+  if(!selectedSources.length){addMessage('assistant','Belum ada sumber yang dipilih. Centang setidaknya satu sumber di pustaka, atau aktifkan semua pilihan.');return;}
   busy=true;sendButton.disabled=true;sendButton.textContent='…';questionInput.value='';addMessage('user',question);
   const loading=document.createElement('div');loading.className='chat-message assistant';loading.textContent='PACIANA sedang membaca bagian-bagian yang relevan…';chatMessages.appendChild(loading);
   try{
-    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:selectChunksForQuestion(question,sources)})});
+    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:selectChunksForQuestion(question,selectedSources)})});
     const data=await response.json();loading.remove();
     if(!response.ok)throw new Error(data.error||'Permintaan gagal.');
     const answer=data.answer||'Tidak ada jawaban yang dikembalikan.';
