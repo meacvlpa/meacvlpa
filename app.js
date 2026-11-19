@@ -11,7 +11,7 @@ const MAX_FILE_BYTES=15*1024*1024;
 const MAX_TOTAL_CHARS=100000;
 
 function renderSources(){
-  sourceCount.textContent=sources.length+' source'+(sources.length===1?'':'s');
+  sourceCount.textContent=sources.length+' sumber';
   if(!sources.length){sourceList.innerHTML='<div class="empty-state">Your sources will appear here.</div>';return;}
   sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' text segments</small></div><button class="remove-source" data-index="'+i+'" aria-label="Remove source">×</button></div>').join('');
 }
@@ -26,7 +26,7 @@ async function extractFile(file){
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='txt'||ext==='md'){return splitText(await file.text());}
   if(ext==='pdf'){
-    if(!window.pdfjsLib)throw new Error('PDF reader did not load. Refresh the page and try again.');
+    if(!window.pdfjsLib)throw new Error('Pembaca PDF gagal dimuat. Muat ulang halaman lalu coba lagi.');
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
     const chunks=[];
@@ -38,29 +38,29 @@ async function extractFile(file){
     return chunks;
   }
   if(ext==='docx'){
-    if(!window.mammoth)throw new Error('DOCX reader did not load. Refresh the page and try again.');
+    if(!window.mammoth)throw new Error('Pembaca DOCX gagal dimuat. Muat ulang halaman lalu coba lagi.');
     const result=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
     return splitText(result.value);
   }
-  if(ext==='doc')throw new Error('Legacy .doc files are not supported. Please save this document as .docx or PDF.');
-  throw new Error('Unsupported file type.');
+  if(ext==='doc')throw new Error('Berkas .doc lama tidak didukung. Simpan dokumen sebagai .docx atau PDF.');
+  throw new Error('Jenis berkas tidak didukung.');
 }
 async function addFiles(files){
   for(const file of files){
     const ext=file.name.split('.').pop().toLowerCase();
-    if(!['pdf','txt','md','docx','doc'].includes(ext)){alert('Unsupported file: '+file.name);continue;}
-    if(file.size>MAX_FILE_BYTES){alert(file.name+' exceeds the 15 MB per-file limit.');continue;}
+    if(!['pdf','txt','md','docx','doc'].includes(ext)){alert('Jenis berkas tidak didukung: '+file.name);continue;}
+    if(file.size>MAX_FILE_BYTES){alert(file.name+' melebihi batas 15 MB per berkas.');continue;}
     if(sources.some(x=>x.name===file.name&&x.size===file.size))continue;
-    const status=document.getElementById('sourceStatus');status.textContent='Extracting '+file.name+'…';
+    const status=document.getElementById('sourceStatus');status.textContent='Mengekstrak '+file.name+'…';
     try{
       const chunks=await extractFile(file);
-      if(!chunks.length){alert('No selectable text was found in '+file.name+'. Scanned PDFs need OCR, which is not available yet.');continue;}
+      if(!chunks.length){alert('Tidak ditemukan teks yang dapat dipilih dalam '+file.name+'. PDF hasil pemindaian memerlukan OCR yang belum tersedia.');continue;}
       sources.push({name:file.name,size:file.size,ext:ext.toUpperCase(),chunks});
       renderSources();
       saveActiveNotebook();
-    }catch(error){alert('Could not read '+file.name+': '+error.message);}
+    }catch(error){alert('Tidak dapat membaca '+file.name+': '+error.message);}
   }
-  document.getElementById('sourceStatus').textContent=sources.length+' readable source(s) ready for questions.';
+  document.getElementById('sourceStatus').textContent=sources.length+' sumber siap digunakan untuk pertanyaan.';
 }
 fileInput.addEventListener('change',e=>{addFiles(e.target.files);fileInput.value='';});
 sourceList.addEventListener('click',e=>{const b=e.target.closest('[data-index]');if(b){sources.splice(Number(b.dataset.index),1);renderSources();saveActiveNotebook();}});
@@ -127,23 +127,23 @@ document.getElementById('currentNotebook').textContent=notebooks[0].name;
 renderNotebookList();
 let saveTimerId;
 notes.addEventListener('input',()=>{
-  document.getElementById('saveStatus').textContent='Saving…';
+  document.getElementById('saveStatus').textContent='Menyimpan…';
   clearTimeout(saveTimerId);
   saveTimerId=setTimeout(()=>{
     saveActiveNotebook();
-    document.getElementById('saveStatus').textContent='Saved in this browser';
+    document.getElementById('saveStatus').textContent='Tersimpan di browser ini';
   },350);
 });
 document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{questionInput.value=b.textContent;questionInput.focus();}));
 
 function addMessage(role,text,evidence=[],verification=null,retrieval=null){
   const wrap=document.createElement('div');wrap.className='chat-message '+role;
-  const label=document.createElement('strong');label.textContent=role==='user'?'You':'PACIANA';
+  const label=document.createElement('strong');label.textContent=role==='user'?'Anda':'PACIANA';
   const body=document.createElement('div');body.className='message-body';body.textContent=text;
   wrap.append(label,body);
   if(role==='assistant'&&Array.isArray(evidence)&&evidence.length){
     const proofBox=document.createElement('section');proofBox.className='evidence-box';
-    const heading=document.createElement('strong');heading.className='evidence-heading';heading.textContent='Textual evidence — exact quote found in source';
+    const heading=document.createElement('strong');heading.className='evidence-heading';heading.textContent='Bukti tekstual — kutipan persis ditemukan dalam sumber';
     proofBox.appendChild(heading);
     evidence.forEach(item=>{
       const proof=document.createElement('blockquote');proof.className='evidence-quote';
@@ -153,13 +153,13 @@ function addMessage(role,text,evidence=[],verification=null,retrieval=null){
     });
     if(verification){
       const note=document.createElement('p');note.className='verification-note';
-      note.textContent='Evidence audit: '+(verification.exact_quote_claims??verification.verified_claims??0)+' claim(s) passed exact-quote matching; '+(verification.semantically_supported_claims??0)+' passed the separate semantic support review; '+(verification.rejected_by_semantic_audit??0)+' were rejected as not sufficiently supported. Semantic review is an AI-assisted safeguard, not a substitute for scholarly reading of the original source.';
+      note.textContent='Audit bukti: '+(verification.exact_quote_claims??verification.verified_claims??0)+' klaim cocok dengan kutipan persis; '+(verification.semantically_supported_claims??0)+' lolos pemeriksaan dukungan semantik terpisah; '+(verification.rejected_by_semantic_audit??0)+' ditolak karena dukungannya tidak memadai. Pemeriksaan semantik oleh AI merupakan pengaman, bukan pengganti pembacaan ilmiah atas sumber asli.';
       proofBox.appendChild(note);
     }
     if(retrieval){
       const retrievalNote=document.createElement('p');retrievalNote.className='verification-note';
-      const modeLabels={hybrid_lexical_semantic:'Hybrid semantic + lexical search',lexical_fallback:'Lexical search (semantic search temporarily unavailable)',lexical_only:'Lexical search only',none:'No retrieval'};
-      retrievalNote.textContent='Retrieval: '+(modeLabels[retrieval.mode]||retrieval.mode)+'. '+(retrieval.retrieved_chunks??0)+' passage(s) supplied to the answer stage.';
+      const modeLabels={hybrid_lexical_semantic:'Pencarian semantik + leksikal',lexical_fallback:'Pencarian leksikal (pencarian semantik sementara tidak tersedia)',lexical_only:'Pencarian leksikal saja',none:'Tidak ada pencarian'};
+      retrievalNote.textContent='Penelusuran: '+(modeLabels[retrieval.mode]||retrieval.mode)+'. '+(retrieval.retrieved_chunks??0)+' bagian teks diberikan untuk penyusunan jawaban.';
       proofBox.appendChild(retrievalNote);
     }
     wrap.appendChild(proofBox);
@@ -170,18 +170,18 @@ function addMessage(role,text,evidence=[],verification=null,retrieval=null){
 }
 async function askQuestion(){
   const question=questionInput.value.trim();if(!question||busy)return;
-  if(!sources.length){addMessage('assistant','Please upload at least one readable source before asking a question.');return;}
+  if(!sources.length){addMessage('assistant','Unggah setidaknya satu sumber yang dapat dibaca sebelum mengajukan pertanyaan.');return;}
   const total=sources.reduce((n,s)=>n+s.chunks.reduce((m,c)=>m+c.text.length,0),0);
-  if(total>MAX_TOTAL_CHARS){addMessage('assistant','Your selected sources contain too much text for one request. Remove some documents or use shorter files.');return;}
+  if(total>MAX_TOTAL_CHARS){addMessage('assistant','Sumber yang dipilih memuat terlalu banyak teks untuk satu permintaan. Hapus beberapa dokumen atau gunakan berkas yang lebih pendek.');return;}
   busy=true;sendButton.disabled=true;sendButton.textContent='…';questionInput.value='';addMessage('user',question);
-  const loading=document.createElement('div');loading.className='chat-message assistant';loading.textContent='PACIANA is reading the relevant passages…';chatMessages.appendChild(loading);
+  const loading=document.createElement('div');loading.className='chat-message assistant';loading.textContent='PACIANA sedang membaca bagian-bagian yang relevan…';chatMessages.appendChild(loading);
   try{
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:sources.map(s=>({name:s.name,chunks:s.chunks}))})});
     const data=await response.json();loading.remove();
-    if(!response.ok)throw new Error(data.error||'The request failed.');
-    const answer=data.answer||'No answer was returned.';
+    if(!response.ok)throw new Error(data.error||'Permintaan gagal.');
+    const answer=data.answer||'Tidak ada jawaban yang dikembalikan.';
     addMessage('assistant',answer,data.evidence||[],data.verification||null,data.retrieval||null);
-  }catch(error){loading.remove();addMessage('assistant','Unable to answer: '+error.message);}
+  }catch(error){loading.remove();addMessage('assistant','Tidak dapat menjawab: '+error.message);}
   finally{busy=false;sendButton.disabled=false;sendButton.textContent='↑';}
 }
 sendButton.addEventListener('click',askQuestion);
@@ -192,7 +192,7 @@ document.getElementById('notebookList').addEventListener('click',event=>{
 });
 document.getElementById('newNotebook').addEventListener('click',()=>{
   if(busy)return;
-  const name=prompt('Name your notebook:');
+  const name=prompt('Beri nama notebook Anda:');
   if(!name||!name.trim())return;
   saveActiveNotebook();
   const notebook={id:'nb-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name:name.trim(),sources:[],notes:'',chatHTML:''};
@@ -283,4 +283,25 @@ persistNotebooks();
       localStorage.setItem('paciana-sources-percent',String(next));
     }
   }));
+})();
+
+
+// Appearance settings: light (day), dark (night), or follow device preference.
+(function setupAppearance(){
+  const select=document.getElementById('themeSelect');
+  if(!select)return;
+  const key='paciana-appearance';
+  const saved=localStorage.getItem(key)||'light';
+  function apply(value){
+    const mode=value==='system'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):value;
+    document.body.dataset.theme=mode;
+    select.value=value;
+    localStorage.setItem(key,value);
+  }
+  apply(saved);
+  select.addEventListener('change',()=>apply(select.value));
+  if(window.matchMedia){
+    const media=window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener?.('change',()=>{if(select.value==='system')apply('system');});
+  }
 })();
