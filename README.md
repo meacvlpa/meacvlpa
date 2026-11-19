@@ -32,8 +32,8 @@ Add these environment variables in Render:
 |---|---|
 | `GEMINI_API_KEY` | Your Gemini API key (secret) |
 | `GEMINI_MODEL` | `gemini-2.5-flash-lite` |
-| `` | (tidak digunakan; retrieval lokal) |
-| `GEMINI_VERIFIER_MODEL` | `gpt-4.1-mini` |
+
+| `GEMINI_VERIFIER_MODEL` | `gemini-2.5-flash-lite` |
 | `NODE_ENV` | `production` |
 
 Never expose `GEMINI_API_KEY` in `app.js`, HTML, browser variables, or GitHub commits.
@@ -63,9 +63,9 @@ Create a local `.env` file (do not commit it) and set:
 
 ```env
 GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gpt-4.1-mini
+GEMINI_MODEL=gemini-2.5-flash-lite
 =text-embedding-3-small
-GEMINI_VERIFIER_MODEL=gpt-4.1-mini
+GEMINI_VERIFIER_MODEL=gemini-2.5-flash-lite
 PORT=10000
 ```
 
@@ -96,6 +96,10 @@ npm run check
 - Notes and notebook selections are currently stored in the browser; there is no login or cloud synchronization.
 - The included rate limit is per running server instance. Add authentication and robust abuse controls before a public launch.
 - A Render free service may sleep when inactive; first requests after inactivity may take longer. Check Render's current plan details for exact limits.
+
+## Data privacy note
+
+The Gemini API free tier may use submitted prompts and responses to improve Google's products, and content may be reviewed by humans under Google's terms. Do not upload confidential, unpublished, personally identifying, or otherwise sensitive research material to the free tier. Review Google's current [Gemini API terms and pricing](https://ai.google.dev/gemini-api/docs/pricing) before using it for restricted materials.
 
 ## Academic evaluation benchmark
 
