@@ -1,33 +1,62 @@
 # PACIANA Research Notebook
 
-A research workspace for Patristic and theological studies, inspired by source-grounded AI notebook workflows.
+A source-grounded research workspace for Patristics and theology.
 
 **Motto:** Per fontes ad veritatem.
 
-## Current MVP
+## Current features
 
-- Responsive research notebook interface
-- Local document selection and source list (metadata only)
-- Research notes saved in browser local storage
-- Notebook creation in the current browser session
-- AI chat interface placeholder
+- Responsive notebook interface.
+- Upload and extract selectable-text PDF, DOCX, TXT, and Markdown files in the browser.
+- PDF extraction preserves page numbers.
+- Basic lexical retrieval ranks passages relevant to the question.
+- OpenAI Responses API integration through a server-side Vercel Function.
+- Academic system instructions: source-only answers, explicit uncertainty, and no invented quotations or page references.
+- Research notes saved in the current browser.
 
-## Important limitations
+## Deploy on Vercel
 
-This is an initial frontend prototype. It does **not** yet extract document text, persist uploaded files, or generate AI answers. The current source list displays selected file metadata only. Research notes are stored locally in the browser.
+1. Import `meacvlpa/meacvlpa` from GitHub in Vercel.
+2. Set the project framework preset to **Other** if Vercel does not detect a framework.
+3. Add `OPENAI_API_KEY` in Project → Settings → Environment Variables. Mark it as a **Secret**, and enable it for Production (and Preview/Development if desired).
+4. Optionally add `OPENAI_MODEL` with a model ID enabled for your OpenAI API project. The default is `gpt-4.1-mini`.
+5. Redeploy after adding or changing environment variables.
+6. Open the deployment URL and upload a text-based document to test the chat.
 
-## Planned development
+Never put the OpenAI API key in `app.js`, HTML, or any `NEXT_PUBLIC_*` variable. Do not commit it to GitHub.
 
-1. Secure backend and AI provider integration (API keys must remain server-side).
-2. PDF and DOCX text extraction, OCR for scanned documents, and page-aware chunking.
-3. Retrieval-augmented generation (RAG) with source-grounded answers and page citations.
-4. Notebook and source persistence with authentication and database storage.
-5. Academic tools: Latin/Greek text comparison, translation alignment, quotation search, bibliographic metadata, and exportable research notes.
+## Local development
 
-## Run locally
+Use Node.js and the Vercel CLI:
 
-This first version is static. Open `index.html` in a browser, or serve the repository with any static web server.
+```bash
+npm i -g vercel
+vercel dev
+```
 
-## Deployment
+Create a local `.env` file (do not commit it):
 
-The frontend can be published with GitHub Pages. AI functionality requires a separate backend deployment and server-side secrets configuration. Never put API keys in frontend JavaScript or commit them to this repository.
+```bash
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+## Current limitations — important for academic use
+
+- This is an early MVP, not yet a full NotebookLM replacement.
+- Uploaded document text is extracted in the browser and sent with each question; files are not permanently uploaded to a database.
+- Retrieval is basic lexical matching, not embeddings/vector search.
+- Scanned PDFs need OCR and are not yet supported.
+- PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers, so citations identify the source without a page.
+- The answer model is instructed to cite retrieved source markers. Always verify quotations and references against the original edition.
+- Notes and notebook selections are currently browser-local; there is no login or cloud synchronization.
+- A lightweight per-instance rate limit is included. Add authentication and stronger abuse controls before public launch.
+
+## Planned next stages
+
+1. Persistent notebooks and source storage (Supabase).
+2. Embedding-based semantic retrieval and hybrid search.
+3. OCR for scanned books and articles.
+4. Bibliography metadata (author, title, editor, series, publication, year).
+5. Latin/Greek text alignment, translation comparison, and quotation verification.
+6. Exportable notes and citation formats.
