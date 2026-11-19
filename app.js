@@ -88,7 +88,7 @@ function addMessage(role,text,evidence=[],verification=null){
     });
     if(verification){
       const note=document.createElement('p');note.className='verification-note';
-      note.textContent='Exact-quote check: '+verification.verified_claims+' claim(s) have quotations found in the supplied text. Claims without a matching quotation were excluded. Quote matching confirms textual presence; it does not by itself prove that an interpretation is correct.';
+      note.textContent='Evidence audit: '+(verification.exact_quote_claims??verification.verified_claims??0)+' claim(s) passed exact-quote matching; '+(verification.semantically_supported_claims??0)+' passed the separate semantic support review; '+(verification.rejected_by_semantic_audit??0)+' were rejected as not sufficiently supported. Semantic review is an AI-assisted safeguard, not a substitute for scholarly reading of the original source.';
       proofBox.appendChild(note);
     }
     wrap.appendChild(proofBox);
