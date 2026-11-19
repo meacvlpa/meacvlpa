@@ -71,7 +71,7 @@ const notes=document.getElementById('researchNotes');notes.value=localStorage.ge
 let saveTimer;notes.addEventListener('input',()=>{document.getElementById('saveStatus').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem('paciana-notes',notes.value);document.getElementById('saveStatus').textContent='Saved in this browser';},350);});
 document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{questionInput.value=b.textContent;questionInput.focus();}));
 
-function addMessage(role,text,evidence=[],verification=null){
+function addMessage(role,text,evidence=[],verification=null,retrieval=null){
   const wrap=document.createElement('div');wrap.className='chat-message '+role;
   const label=document.createElement('strong');label.textContent=role==='user'?'You':'PACIANA';
   const body=document.createElement('div');body.className='message-body';body.textContent=text;
@@ -91,6 +91,12 @@ function addMessage(role,text,evidence=[],verification=null){
       note.textContent='Evidence audit: '+(verification.exact_quote_claims??verification.verified_claims??0)+' claim(s) passed exact-quote matching; '+(verification.semantically_supported_claims??0)+' passed the separate semantic support review; '+(verification.rejected_by_semantic_audit??0)+' were rejected as not sufficiently supported. Semantic review is an AI-assisted safeguard, not a substitute for scholarly reading of the original source.';
       proofBox.appendChild(note);
     }
+    if(retrieval){
+      const retrievalNote=document.createElement('p');retrievalNote.className='verification-note';
+      const modeLabels={hybrid_lexical_semantic:'Hybrid semantic + lexical search',lexical_fallback:'Lexical search (semantic search temporarily unavailable)',lexical_only:'Lexical search only',none:'No retrieval'};
+      retrievalNote.textContent='Retrieval: '+(modeLabels[retrieval.mode]||retrieval.mode)+'. '+(retrieval.retrieved_chunks??0)+' passage(s) supplied to the answer stage.';
+      proofBox.appendChild(retrievalNote);
+    }
     wrap.appendChild(proofBox);
   }
   chatMessages.appendChild(wrap);wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -107,7 +113,7 @@ async function askQuestion(){
     const data=await response.json();loading.remove();
     if(!response.ok)throw new Error(data.error||'The request failed.');
     const answer=data.answer||'No answer was returned.';
-    addMessage('assistant',answer,data.evidence||[],data.verification||null);
+    addMessage('assistant',answer,data.evidence||[],data.verification||null,data.retrieval||null);
   }catch(error){loading.remove();addMessage('assistant','Unable to answer: '+error.message);}
   finally{busy=false;sendButton.disabled=false;sendButton.textContent='↑';}
 }
