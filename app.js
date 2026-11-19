@@ -135,6 +135,19 @@ renderSources();
   const sidebarHandle=document.querySelector('[data-resize="sidebar"]');
   const columnsHandle=document.querySelector('[data-resize="columns"]');
   if(!shell||!workspace||!sidebarHandle||!columnsHandle)return;
+  const studio=document.querySelector('.studio-panel');
+  const savedStudioHeight=Number(localStorage.getItem('paciana-studio-height'));
+  if(studio&&savedStudioHeight>=420&&savedStudioHeight<=window.innerHeight*.95)studio.style.height=savedStudioHeight+'px';
+  if(studio&&'ResizeObserver' in window){
+    let studioSaveFrame=0;
+    new ResizeObserver(entries=>{
+      const height=Math.round(entries[0].contentRect.height);
+      if(height>=420&&height<=window.innerHeight*.95){
+        cancelAnimationFrame(studioSaveFrame);
+        studioSaveFrame=requestAnimationFrame(()=>localStorage.setItem('paciana-studio-height',String(height)));
+      }
+    }).observe(studio);
+  }
   const savedSidebar=Number(localStorage.getItem('paciana-sidebar-width'));
   const savedSources=Number(localStorage.getItem('paciana-sources-percent'));
   if(savedSidebar>=190&&savedSidebar<=420)shell.style.setProperty('--paciana-sidebar-width',savedSidebar+'px');
