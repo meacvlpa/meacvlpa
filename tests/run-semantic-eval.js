@@ -31,8 +31,8 @@ console.log("Fixture check passed: " + fixture.cases.length + " cases.");
 console.log("Categories: " + [...new Set(fixture.cases.map(x => x.category))].join(", "));
 if (process.argv.includes("--check")) process.exit(0);
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("Set OPENAI_API_KEY in your local environment to run the live semantic benchmark. Never commit the key.");
+if (!process.env.GEMINI_API_KEY) {
+  console.error("Set GEMINI_API_KEY in your local environment to run the live semantic benchmark. Never commit the key.");
   process.exit(2);
 }
 
@@ -70,34 +70,32 @@ const instructions = [
 ].join("\n");
 
 async function main() {
-  const model = process.env.OPENAI_VERIFIER_MODEL || process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const model = process.env.GEMINI_VERIFIER_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
   const payload = {
     source: fixture.source,
     cases: fixture.cases.map(({ id, category, claim }) => ({ id, category, claim }))
   };
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" +
+    encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(process.env.GEMINI_API_KEY), {
     method: "POST",
-    headers: {
-      "Authorization": "Bearer " + process.env.OPENAI_API_KEY,
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model,
-      instructions,
-      input: JSON.stringify(payload),
-      text: { format: { type: "json_schema", name: "semantic_benchmark", strict: true, schema } },
-      max_output_tokens: 1600
+      systemInstruction: { parts: [{ text: instructions }] },
+      contents: [{ role: "user", parts: [{ text: JSON.stringify(payload) }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0,
+        maxOutputTokens: 1600
+      }
     })
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || "OpenAI API request failed.");
-  if (data.status === "incomplete") throw new Error("Model response was incomplete.");
-  const outputText = data.output_text || (data.output || [])
-    .flatMap(x => x.content || [])
-    .filter(x => x.type === "output_text")
-    .map(x => x.text).join("\n");
-  if (!outputText) throw new Error("No structured output returned.");
+  if (!response.ok) throw new Error(data?.error?.message || "Gemini API request failed.");
+  const candidate = data?.candidates?.[0];
+  const outputText = (candidate?.content?.parts || []).map(part => part.text || "").join("");
+  if (!outputText || candidate?.finishReason === "MAX_TOKENS") throw new Error("Gemini returned no complete structured output.");
 
   const result = JSON.parse(outputText);
   if (!Array.isArray(result.evaluations)) throw new Error("Malformed evaluation output.");
