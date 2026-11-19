@@ -7,9 +7,15 @@ const questionInput=document.getElementById('questionInput');
 const sendButton=document.getElementById('sendQuestion');
 let sources=[];
 let busy=false;
-const MAX_FILE_BYTES=15*1024*1024;
-const MAX_TOTAL_CHARS=100000;
+const MAX_FILE_BYTES=50*1024*1024;
+const MAX_CHAT_CHUNKS=30;
+const MAX_CHAT_CHARS=105000;
 
+const SOURCE_DB_NAME='paciana-source-library-v1';
+let sourceDbPromise;
+function openSourceDb(){if(!('indexedDB' in window))return Promise.reject(new Error('Penyimpanan dokumen besar tidak didukung browser ini.'));if(!sourceDbPromise)sourceDbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open(SOURCE_DB_NAME,1);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('notebookSources'))db.createObjectStore('notebookSources');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});return sourceDbPromise;}
+async function storeNotebookSources(id,value){const db=await openSourceDb();return new Promise((resolve,reject)=>{const tx=db.transaction('notebookSources','readwrite');tx.objectStore('notebookSources').put(value,id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
+async function readNotebookSources(id){try{const db=await openSourceDb();return await new Promise((resolve,reject)=>{const tx=db.transaction('notebookSources','readonly');const req=tx.objectStore('notebookSources').get(id);req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);req.onerror=()=>reject(req.error);});}catch(error){console.warn(error);return [];}}
 function renderSources(){
   sourceCount.textContent=sources.length+' sumber';
   if(!sources.length){sourceList.innerHTML='<div class="empty-state">Sumber Anda akan muncul di sini.</div>';return;}
@@ -96,6 +102,10 @@ async function extractFile(file){
     if(ocrPages)document.getElementById('sourceStatus').textContent='OCR selesai pada '+ocrPages+' halaman. Menyiapkan sumber…';
     return chunks;
   }
+  if(['png','jpg','jpeg','webp','bmp','tif','tiff'].includes(ext)){
+    const worker=await getOcrWorker();document.getElementById('sourceStatus').textContent='Mengenali teks pada gambar dengan OCR…';
+    const result=await worker.recognize(file);return splitText((result.data.text||'').trim(),1);
+  }
   if(ext==='docx'){
     if(!window.mammoth)throw new Error('Pembaca DOCX gagal dimuat. Muat ulang halaman lalu coba lagi.');
     const result=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
@@ -107,7 +117,7 @@ async function extractFile(file){
 async function addFiles(files){
   for(const file of files){
     const ext=file.name.split('.').pop().toLowerCase();
-    if(!['pdf','txt','md','docx','doc'].includes(ext)){alert('Jenis berkas tidak didukung: '+file.name);continue;}
+    if(!['pdf','txt','md','docx','doc','png','jpg','jpeg','webp','bmp','tif','tiff'].includes(ext)){alert('Jenis berkas tidak didukung: '+file.name);continue;}
     if(file.size>MAX_FILE_BYTES){alert(file.name+' melebihi batas 15 MB per berkas.');continue;}
     if(sources.some(x=>x.name===file.name&&x.size===file.size))continue;
     const status=document.getElementById('sourceStatus');status.textContent='Mengekstrak '+file.name+'…';
@@ -148,13 +158,14 @@ const NOTEBOOKS_KEY='paciana-notebooks-v1';
 let notebooks=[];
 let activeNotebookId='';
 function persistNotebooks(){
-  try{localStorage.setItem(NOTEBOOKS_KEY,JSON.stringify(notebooks));}
-  catch(error){console.warn('Could not save notebook data in this browser:',error);}
+  try{localStorage.setItem(NOTEBOOKS_KEY,JSON.stringify(notebooks.map(({sources:ignored,...rest})=>rest)));}
+  catch(error){console.warn('Could not save notebook metadata in this browser:',error);}
 }
 function saveActiveNotebook(){
   const active=notebooks.find(n=>n.id===activeNotebookId);
   if(!active)return;
-  active.sources=sources;
+  active.sources=[];
+  storeNotebookSources(active.id,sources).catch(error=>{console.error(error);document.getElementById('sourceStatus').textContent='Penyimpanan dokumen gagal. Ruang penyimpanan browser mungkin penuh.';});
   active.notes=notes.value;
   active.chatHTML=chatMessages.innerHTML;
   persistNotebooks();
@@ -172,13 +183,13 @@ function renderNotebookList(){
     button.append(dot,label);list.appendChild(button);
   });
 }
-function activateNotebook(id){
+async function activateNotebook(id){
   if(busy||id===activeNotebookId)return;
   saveActiveNotebook();
   const target=notebooks.find(n=>n.id===id);
   if(!target)return;
   activeNotebookId=target.id;
-  sources=Array.isArray(target.sources)?target.sources:[];
+  sources=Array.isArray(target.sources)&&target.sources.length?target.sources:await readNotebookSources(target.id);
   notes.value=target.notes||'';
   chatMessages.innerHTML=target.chatHTML||'';
   document.getElementById('currentNotebook').textContent=target.name;
@@ -198,6 +209,7 @@ activeNotebookId=notebooks[0].id;
 notes.value=notebooks[0].notes||'';
 document.getElementById('currentNotebook').textContent=notebooks[0].name;
 renderNotebookList();
+(async()=>{for(const notebook of notebooks){if(Array.isArray(notebook.sources)&&notebook.sources.length){await storeNotebookSources(notebook.id,notebook.sources);notebook.sources=[];}}sources=await readNotebookSources(activeNotebookId);renderSources();document.getElementById('sourceStatus').textContent=sources.length+' sumber siap digunakan untuk pertanyaan.';persistNotebooks();})();
 document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{questionInput.value=b.textContent;questionInput.focus();}));
 
 function addMessage(role,text,evidence=[],verification=null,retrieval=null){
@@ -232,6 +244,15 @@ function addMessage(role,text,evidence=[],verification=null,retrieval=null){
   saveActiveNotebook();
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+function selectChunksForQuestion(question,source){
+  const all=(source.chunks||[]).filter(c=>c&&typeof c.text==='string'&&c.text.trim());
+  const q=String(question||'').toLocaleLowerCase('id').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const overview=/(tentang\s+apa|apa\s+(isi|pokok|gagasan|tema|topik|inti)|ringkas|rangkum|overview|summari[sz]e|main\s+(idea|theme))/i.test(q);
+  let chosen;
+  if(overview){chosen=[];const stride=Math.max(1,Math.ceil(all.length/MAX_CHAT_CHUNKS));for(let i=0;i<all.length&&chosen.length<MAX_CHAT_CHUNKS;i+=stride)chosen.push(all[i]);if(all.length&&chosen[chosen.length-1]!==all[all.length-1]&&chosen.length<MAX_CHAT_CHUNKS)chosen.push(all[all.length-1]);}
+  else{const words=[...new Set((q.match(/[\p{L}\p{N}]{3,}/gu)||[]))];chosen=all.map(c=>{const body=c.text.toLocaleLowerCase('id');let score=0;for(const w of words)if(body.includes(w))score++;return {...c,score};}).filter(c=>c.score>0).sort((a,b)=>b.score-a.score).slice(0,MAX_CHAT_CHUNKS);}
+  let total=0;return chosen.map(c=>({page:Number.isInteger(c.page)?c.page:null,text:c.text.slice(0,3500)})).filter(c=>{if(total+c.text.length>MAX_CHAT_CHARS)return false;total+=c.text.length;return true;});
+}
 async function askQuestion(){
   const question=questionInput.value.trim();if(!question||busy)return;
   // Perintah dokumen diproses langsung dari teks lokal; tidak dikirim ke Gemini.
@@ -258,12 +279,10 @@ async function askQuestion(){
     return;
   }
   if(!sources.length){addMessage('assistant','Unggah setidaknya satu sumber yang dapat dibaca sebelum mengajukan pertanyaan.');return;}
-  const total=sources.reduce((n,s)=>n+s.chunks.reduce((m,c)=>m+c.text.length,0),0);
-  if(total>MAX_TOTAL_CHARS){addMessage('assistant','Sumber yang dipilih memuat terlalu banyak teks untuk satu permintaan. Hapus beberapa dokumen atau gunakan berkas yang lebih pendek.');return;}
   busy=true;sendButton.disabled=true;sendButton.textContent='…';questionInput.value='';addMessage('user',question);
   const loading=document.createElement('div');loading.className='chat-message assistant';loading.textContent='PACIANA sedang membaca bagian-bagian yang relevan…';chatMessages.appendChild(loading);
   try{
-    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:sources.map(s=>({name:s.name,chunks:s.chunks}))})});
+    const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:sources.map(s=>({name:s.name,chunks:selectChunksForQuestion(question,s)}))})});
     const data=await response.json();loading.remove();
     if(!response.ok)throw new Error(data.error||'Permintaan gagal.');
     const answer=data.answer||'Tidak ada jawaban yang dikembalikan.';
