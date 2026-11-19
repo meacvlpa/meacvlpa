@@ -126,3 +126,72 @@ document.getElementById('newNotebook').addEventListener('click',()=>{
   document.querySelectorAll('.notebook-link').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');
 });
 renderSources();
+
+
+// Resizable layout: sidebar and source/studio split persist in this browser.
+(function enableResizableLayout(){
+  const shell=document.querySelector('.app-shell');
+  const workspace=document.querySelector('.workspace-grid');
+  const sidebarHandle=document.querySelector('[data-resize="sidebar"]');
+  const columnsHandle=document.querySelector('[data-resize="columns"]');
+  if(!shell||!workspace||!sidebarHandle||!columnsHandle)return;
+  const savedSidebar=Number(localStorage.getItem('paciana-sidebar-width'));
+  const savedSources=Number(localStorage.getItem('paciana-sources-percent'));
+  if(savedSidebar>=190&&savedSidebar<=420)shell.style.setProperty('--paciana-sidebar-width',savedSidebar+'px');
+  if(savedSources>=25&&savedSources<=65)workspace.style.setProperty('--paciana-source-fr',savedSources+'fr');
+  function beginResize(event,type){
+    if(window.matchMedia('(max-width:700px)').matches)return;
+    event.preventDefault();
+    const startX=event.clientX;
+    const shellRect=shell.getBoundingClientRect();
+    const gridRect=workspace.getBoundingClientRect();
+    const startSidebar=parseFloat(getComputedStyle(shell).getPropertyValue('--paciana-sidebar-width'))||270;
+    const currentCols=getComputedStyle(workspace).gridTemplateColumns.split(' ').map(parseFloat);
+    const available=Math.max(1,gridRect.width-7);
+    const startSource=currentCols[0]||available*.44;
+    document.body.classList.add('is-resizing');
+    function move(e){
+      const delta=e.clientX-startX;
+      if(type==='sidebar'){
+        const width=Math.max(190,Math.min(420,startSidebar+delta));
+        shell.style.setProperty('--paciana-sidebar-width',width+'px');
+      }else{
+        const width=Math.max(260,Math.min(available-320,startSource+delta));
+        const pct=Math.max(25,Math.min(65,width/available*100));
+        workspace.style.setProperty('--paciana-source-fr',pct+'fr');
+        workspace.style.gridTemplateColumns='minmax(260px,'+pct+'fr) 7px minmax(320px,'+(100-pct)+'fr)';
+      }
+    }
+    function end(){
+      document.removeEventListener('pointermove',move);
+      document.removeEventListener('pointerup',end);
+      document.body.classList.remove('is-resizing');
+      const sidebar=parseFloat(getComputedStyle(shell).getPropertyValue('--paciana-sidebar-width'));
+      const cols=getComputedStyle(workspace).gridTemplateColumns.split(' ').map(parseFloat);
+      const total=cols[0]+cols[2];
+      if(Number.isFinite(sidebar))localStorage.setItem('paciana-sidebar-width',String(Math.round(sidebar)));
+      if(total>0)localStorage.setItem('paciana-sources-percent',String(Math.round(cols[0]/total*100)));
+    }
+    document.addEventListener('pointermove',move);
+    document.addEventListener('pointerup',end);
+  }
+  sidebarHandle.addEventListener('pointerdown',e=>beginResize(e,'sidebar'));
+  columnsHandle.addEventListener('pointerdown',e=>beginResize(e,'columns'));
+  [sidebarHandle,columnsHandle].forEach((handle,index)=>handle.addEventListener('keydown',e=>{
+    if(!['ArrowLeft','ArrowRight'].includes(e.key))return;
+    e.preventDefault();
+    const delta=e.key==='ArrowRight'?12:-12;
+    if(index===0){
+      const current=parseFloat(getComputedStyle(shell).getPropertyValue('--paciana-sidebar-width'))||270;
+      const next=Math.max(190,Math.min(420,current+delta));
+      shell.style.setProperty('--paciana-sidebar-width',next+'px');
+      localStorage.setItem('paciana-sidebar-width',String(next));
+    }else{
+      const current=Number(localStorage.getItem('paciana-sources-percent'))||44;
+      const next=Math.max(25,Math.min(65,current+delta/5));
+      workspace.style.setProperty('--paciana-source-fr',next+'fr');
+      workspace.style.gridTemplateColumns='minmax(260px,'+next+'fr) 7px minmax(320px,'+(100-next)+'fr)';
+      localStorage.setItem('paciana-sources-percent',String(next));
+    }
+  }));
+})();
