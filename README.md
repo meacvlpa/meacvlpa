@@ -4,73 +4,101 @@ A source-grounded research workspace for Patristics and theology.
 
 **Motto:** Per fontes ad veritatem.
 
+## Deploy on Render
+
+This repository is configured as a Node.js web service for [Render](https://render.com/).
+
+### Option A — Blueprint (recommended)
+
+1. Sign in to Render and connect your GitHub account.
+2. Choose **New → Blueprint**.
+3. Select the repository `meacvlpa/meacvlpa`.
+4. Render detects `render.yaml`. Review the service settings and create the service.
+5. In the service's Environment settings, add the secret `OPENAI_API_KEY`. Do not put this key in GitHub or in frontend code.
+6. Trigger a deploy if Render has not automatically deployed after the secret was added.
+7. Open the service URL. Check `/health`; it should return JSON with `ok: true`.
+
+### Option B — create a Web Service manually
+
+- Repository: `meacvlpa/meacvlpa`
+- Runtime: **Node**
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check path: `/health`
+
+Add these environment variables in Render:
+
+| Variable | Value |
+|---|---|
+| `OPENAI_API_KEY` | Your OpenAI API key (secret) |
+| `OPENAI_MODEL` | `gpt-4.1-mini` |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` |
+| `OPENAI_VERIFIER_MODEL` | `gpt-4.1-mini` |
+| `NODE_ENV` | `production` |
+
+Never expose `OPENAI_API_KEY` in `app.js`, HTML, browser variables, or GitHub commits.
+
 ## Current features
 
 - Responsive notebook interface.
 - Upload and extract selectable-text PDF, DOCX, TXT, and Markdown files in the browser.
 - PDF extraction preserves page numbers.
-- Hybrid retrieval combines multilingual semantic embeddings (`text-embedding-3-small`) with lexical ranking through reciprocal-rank fusion; falls back to lexical retrieval if embedding service is unavailable.
-- OpenAI Responses API integration through a server-side Vercel Function.
-- Strict source-only answering: uploaded excerpts are the exclusive factual authority; the model must not use pretrained/general knowledge to fill gaps.
-- AI role is limited to semantic organization, paraphrase, comparison, synthesis, translation when requested, and academic formatting of claims supported by the supplied excerpts.
-- Structured claim-by-claim output: each claim must include a verbatim evidence quotation and source marker.
-- Server-side exact-quote verification: a claim proceeds only when its verbatim quotation can be found in the cited retrieved source excerpt.
-- A second, independent Responses API call performs a semantic entailment audit. It checks whether the cited passage actually supports every substantive part of the claim; uncertain, partial, merely related, or unsupported claims are rejected (fail-closed).
-- The interface displays the exact evidence quotations and reports how many claims passed quote matching and semantic review.
-- Research notes saved in the current browser.
-
-## Deploy on Vercel
-
-1. Import `meacvlpa/meacvlpa` from GitHub in Vercel.
-2. Set the project framework preset to **Other** if Vercel does not detect a framework.
-3. Add `OPENAI_API_KEY` in Project → Settings → Environment Variables. Mark it as a **Secret**, and enable it for Production (and Preview/Development if desired).
-4. Optionally add `OPENAI_MODEL` with a model ID enabled for your OpenAI API project. The default is `gpt-4.1-mini`.
-5. Redeploy after adding or changing environment variables.
-6. Open the deployment URL and upload a text-based document to test the chat.
-
-Never put the OpenAI API key in `app.js`, HTML, or any `NEXT_PUBLIC_*` variable. Do not commit it to GitHub.
+- Hybrid retrieval combines multilingual semantic embeddings with lexical ranking; it falls back to lexical retrieval if embeddings fail.
+- OpenAI Responses API integration through a server-side Express endpoint at `/api/chat`.
+- Strict source-only answering: uploaded excerpts are the exclusive factual authority.
+- Structured claim-by-claim output with verbatim evidence quotations and source markers.
+- Server-side exact-quote verification.
+- A second semantic entailment audit; unsupported, partial, or uncertain claims are rejected.
+- A health endpoint at `/health` for deployment monitoring.
 
 ## Local development
 
-Use Node.js and the Vercel CLI:
+Requires Node.js 18 or newer.
 
 ```bash
-npm i -g vercel
-vercel dev
+npm install
 ```
 
-Create a local `.env` file (do not commit it):
+Create a local `.env` file (do not commit it) and set:
 
-```bash
+```env
 OPENAI_API_KEY=your_key_here
 OPENAI_MODEL=gpt-4.1-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_VERIFIER_MODEL=gpt-4.1-mini
+PORT=10000
 ```
 
-## Current limitations — important for academic use
+Start the server:
 
-- This is an early MVP, not yet a full NotebookLM replacement.
-- Uploaded document text is extracted in the browser and sent with each question; files are not permanently uploaded to a database.
-- Embedding retrieval currently computes embeddings for the question and all extracted chunks on each request; this adds API cost and latency. It is not yet a persistent vector index and does not cache document embeddings.
-- Scanned PDFs need OCR and are not yet supported.
-- PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers, so citations identify the source without a page.
-- The model is instructed to avoid all outside knowledge. Answers are returned as structured atomic claims with exact quotations. The server checks that each quotation occurs in the retrieved source text and excludes claims without a matching quotation. This exact-string check verifies that the quotation exists, not that the model's interpretation is logically entailed by it; academic review against the original edition remains necessary.
-- Hybrid retrieval improves cross-language discovery but does not guarantee recall. A relevant passage may still fail to rank in the top retrieved excerpts; therefore, an answer that says evidence was not found means it was not found in the retrieved excerpts, not necessarily that no such evidence exists anywhere in the uploaded corpus. The interface reports whether hybrid retrieval or a fallback was used.
-- Semantic verification is an AI-assisted second opinion, not a formal proof of entailment and not a substitute for scholarly reading. The verifier may make mistakes or share model limitations; verify important interpretations, translations, and textual arguments against the original edition.
-- The semantic audit uses a second model request, so it increases latency and API cost. It can be configured separately with OPENAI_VERIFIER_MODEL; otherwise it uses OPENAI_MODEL or the default model.
-- Notes and notebook selections are currently browser-local; there is no login or cloud synchronization.
-- A lightweight per-instance rate limit is included. Add authentication and stronger abuse controls before public launch.
+```bash
+npm start
+```
 
-## Planned next stages
+Open `http://localhost:10000`.
 
-1. Persistent notebooks and source storage (Supabase).
-2. Persistent vector index with cached document embeddings, plus retrieval evaluation for Latin/Greek/Italian/Indonesian queries.
-3. OCR for scanned books and articles.
-4. Bibliography metadata (author, title, editor, series, publication, year).
-5. Evaluation tests for semantic verification (supported, contradicted, partially supported, and unrelated claim cases), then Latin/Greek text alignment and translation comparison.
-6. Exportable notes and citation formats.
+Run static checks:
+
+```bash
+npm run check
+```
+
+## Important academic and technical limitations
+
+- This is an early MVP, not a complete NotebookLM replacement.
+- Uploaded document text is extracted in the browser and sent with each question; files are not permanently stored in a database.
+- Embeddings are currently recomputed for the question and all extracted chunks on each request. This adds latency and API cost; persistent embedding storage and caching are future work.
+- Scanned PDFs require OCR and are not yet supported.
+- PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers.
+- Exact quote matching confirms that the quotation occurs in retrieved text; it does not prove that the interpretation follows logically.
+- Semantic verification is an AI-assisted second opinion, not a formal proof of entailment. Important arguments must still be checked against the original edition.
+- Hybrid retrieval improves cross-language discovery but does not guarantee that every relevant passage will be retrieved.
+- Notes and notebook selections are currently stored in the browser; there is no login or cloud synchronization.
+- The included rate limit is per running server instance. Add authentication and robust abuse controls before a public launch.
+- A Render free service may sleep when inactive; first requests after inactivity may take longer. Check Render's current plan details for exact limits.
 
 ## Academic evaluation benchmark
 
-A controlled semantic-evidence benchmark is available in `tests/`. It includes five labelled cases: fully supported, partially supported, contradicted, unrelated, and historically plausible but absent from the source. The fixture is explicitly fictional and must not be treated as historical evidence.
+A controlled, explicitly fictional semantic-evidence benchmark is available in `tests/`. It includes fully supported, partially supported, contradicted, unrelated, and historically plausible but unstated claims.
 
-Run `node tests/run-semantic-eval.js --check` to validate the fixture, or set `OPENAI_API_KEY` locally and run `node tests/run-semantic-eval.js` for a live model evaluation. See [tests/README.md](tests/README.md) for scope and limitations. The benchmark evaluates the semantic auditor prompt, not the full deployed chat pipeline.
+Run `npm run check` for syntax and fixture checks. A live model evaluation requires `OPENAI_API_KEY`; see [tests/README.md](tests/README.md).
