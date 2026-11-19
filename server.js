@@ -6,7 +6,7 @@ const app = express();
 const PORT = Number(process.env.PORT) || 10000;
 
 app.disable("x-powered-by");
-app.use(express.json({ limit: "12mb" }));
+app.use(express.json({ limit: "16mb" }));
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, app: "PACIANA Research Notebook" });
