@@ -358,3 +358,41 @@ persistNotebooks();
     media.addEventListener?.('change',()=>{if(select.value==='system')apply('system');});
   }
 })();
+
+
+// Minimize/restore workspace panels. Minimized panels remain as vertical tabs at the left.
+(function setupPanelMinimize(){
+  const grid=document.querySelector('.workspace-grid');
+  const panels={
+    sources:document.getElementById('sources'),
+    studio:document.querySelector('.studio-panel')
+  };
+  if(!grid||!panels.sources||!panels.studio)return;
+  const key='paciana-minimized-panels-v1';
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch(_){}
+  function apply(){
+    Object.entries(panels).forEach(([name,panel])=>{
+      const minimized=!!saved[name];
+      panel.classList.toggle('is-minimized',minimized);
+      const button=panel.querySelector('[data-panel-toggle]');
+      if(button){
+        button.textContent=minimized?'›':'‹';
+        button.setAttribute('aria-expanded',String(!minimized));
+        button.setAttribute('aria-label',(minimized?'Pulihkan ':'Minimalkan ')+(name==='sources'?'pustaka':'tanya paciana'));
+        button.title=minimized?'Pulihkan panel':'Minimalkan panel';
+      }
+    });
+    grid.classList.toggle('has-minimized',Object.values(saved).some(Boolean));
+  }
+  grid.addEventListener('click',event=>{
+    const button=event.target.closest('[data-panel-toggle]');
+    if(!button)return;
+    const name=button.dataset.panelToggle;
+    if(!(name in panels))return;
+    saved[name]=!saved[name];
+    try{localStorage.setItem(key,JSON.stringify(saved));}catch(_){}
+    apply();
+  });
+  apply();
+})();
