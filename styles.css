@@ -75,3 +75,61 @@ footer{font-size:10px;padding:28px 0 7px}
  .chat-message,.chat-message .message-body{font-size:14px}
  .chat-compose textarea{font-size:14px}
 }
+
+
+/* Keep the conversation above a question box that remains on screen */
+.studio-panel{
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:12px;
+  height:calc(100vh - 24px);
+  min-height:420px;
+  overflow:hidden;
+}
+.studio-panel>.panel-heading,
+.studio-panel>.chat-intro,
+.studio-panel>.suggestions{
+  flex:0 0 auto;
+}
+.studio-panel>.chat-intro{padding-top:18px;padding-bottom:8px}
+.studio-panel>.suggestions{margin:8px 0 12px}
+.studio-panel>.chat-messages{
+  order:4;
+  flex:1 1 auto;
+  min-height:80px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:2px 5px 12px 0;
+  margin-top:8px;
+  scrollbar-gutter:stable;
+}
+.chat-input-dock{
+  order:5;
+  flex:0 0 auto;
+  position:relative;
+  z-index:2;
+  background:var(--white);
+  padding-top:10px;
+  border-top:1px solid var(--line);
+}
+.chat-input-dock .api-note{margin:8px 2px 0}
+@media(max-width:900px){
+  .studio-panel{top:10px;height:calc(100vh - 20px)}
+}
+@media(max-width:600px){
+  .studio-panel{
+    position:sticky;
+    top:8px;
+    height:calc(100dvh - 16px);
+    min-height:380px;
+    padding:16px;
+  }
+  .studio-panel>.chat-intro{padding:10px 8px 6px}
+  .studio-panel>.chat-intro h3{font-size:19px}
+  .studio-panel>.chat-intro p{font-size:11px}
+  .studio-panel>.suggestions{margin:6px 0 8px}
+  .studio-panel>.suggestions .suggestion{font-size:10px;padding:7px 9px}
+  .studio-panel>.chat-messages{min-height:70px}
+  .chat-input-dock .api-note{font-size:10px}
+}
