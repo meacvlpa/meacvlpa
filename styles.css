@@ -234,3 +234,43 @@ body[data-theme="dark"] .beta{border-color:#5a604f;color:#c1cba9}
 .source-viewer-dialog>footer{font-size:10px;color:var(--muted)}.source-viewer-dialog>footer>div{display:flex;gap:7px;flex-wrap:wrap}
 body[data-theme="dark"] #sourceViewerText{background:#241f1a}
 @media(max-width:600px){.source-viewer{padding:10px}.source-viewer-dialog{height:92vh;padding:14px}.source-viewer-dialog>footer{align-items:flex-start;flex-direction:column}.source-actions button{font-size:9px}}
+
+
+/* Panel collapse: minimized panels become slim vertical tabs on the left */
+.panel-toggle{
+  flex:0 0 auto;width:28px;height:28px;border:1px solid var(--line);
+  border-radius:6px;background:transparent;color:var(--brown);
+  font:22px/1 'DM Sans',sans-serif;cursor:pointer;display:grid;place-items:center;
+}
+.panel-toggle:hover{background:rgba(177,139,88,.12);border-color:var(--gold)}
+.panel-heading{gap:10px}
+.workspace-grid.has-minimized{display:flex;align-items:stretch;gap:12px}
+.workspace-grid.has-minimized>.resize-handle{display:none}
+.workspace-grid.has-minimized>.panel{min-width:0}
+.workspace-grid.has-minimized>.panel.is-minimized{
+  order:-1;flex:0 0 48px;width:48px;max-width:48px;min-height:250px;
+  max-height:none;resize:none;overflow:hidden;padding:12px 7px;
+  position:relative;top:auto;height:auto;display:flex;flex-direction:column;
+}
+.workspace-grid.has-minimized>.panel:not(.is-minimized){
+  order:0;flex:1 1 0;width:auto;max-width:none;min-width:0;
+}
+.panel.is-minimized>.panel-heading{
+  flex-direction:column;justify-content:flex-start;gap:12px;
+}
+.panel.is-minimized>.panel-heading>div{order:2;display:flex;align-items:center;justify-content:center;flex:1}
+.panel.is-minimized>.panel-heading h2{
+  writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;
+  font:600 13px 'DM Sans',sans-serif;letter-spacing:.5px;margin:0;
+}
+.panel.is-minimized>.panel-heading .count,
+.panel.is-minimized>.panel-heading .beta{display:none}
+.panel.is-minimized>.panel-heading .panel-toggle{
+  order:1;width:32px;height:30px;font-size:20px;transform:rotate(180deg);
+}
+.studio-panel.is-minimized{height:auto;min-height:250px;max-height:none;position:relative}
+@media(max-width:700px){
+ .workspace-grid.has-minimized{display:flex;flex-direction:row;align-items:stretch}
+ .workspace-grid.has-minimized>.panel.is-minimized{flex-basis:44px;width:44px;max-width:44px;min-height:360px}
+ .workspace-grid.has-minimized>.panel:not(.is-minimized){flex:1 1 0}
+}
