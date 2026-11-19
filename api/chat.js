@@ -51,8 +51,8 @@ function rankChunks(question, sources) {
 
 
 function isDocumentOverviewQuestion(question) {
-  const q = String(question || "").toLocaleLowerCase("id").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
-  return /(?:tentang\\s+apa|apa\\s+(?:isi|pokok|gagasan|tema|topik|inti|pembahasan)|(?:ringkas|rangkum|buatkan\\s+ringkasan)|(?:jelaskan|uraikan)\\s+(?:isi|dokumen|file|sumber)|apa\\s+yang\\s+(?:dibahas|dijelaskan)|what\\s+is\\s+(?:this|the)\\s+(?:document|file|text)\\s+about|(?:main|central)\\s+(?:idea|argument|theme)|summari[sz]e|overview)/i.test(q);
+  const q = String(question || "").toLocaleLowerCase("id").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return /(?:tentang\s+apa|apa\s+(?:isi|pokok|gagasan|tema|topik|inti|pembahasan)|(?:ringkas|rangkum|buatkan\s+ringkasan)|(?:jelaskan|uraikan)\s+(?:isi|dokumen|file|sumber)|apa\s+yang\s+(?:dibahas|dijelaskan)|what\s+is\s+(?:this|the)\s+(?:document|file|text)\s+about|(?:main|central)\s+(?:idea|argument|theme)|summari[sz]e|overview)/i.test(q);
 }
 
 function retrieveAllSourceChunks(sources) {
