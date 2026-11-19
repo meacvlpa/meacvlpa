@@ -152,7 +152,8 @@ module.exports = async function handler(req, res) {
       return send(res, 413, { error: "Your source selection is too large for one question. Use fewer or shorter documents." });
     }
 
-    const retrieval = await hybridRetrieve(question, sources);\n    const relevant = retrieval.chunks;
+    const retrieval = await hybridRetrieve(question, sources);
+    const relevant = retrieval.chunks;
     if (!relevant.length) {
       return send(res, 200, { answer: "I could not find passages that clearly match your question in the extracted text of the sources provided. Try different terms or add a more relevant source.", citations: [], grounded: false, retrieval: { mode: retrieval.mode } });
     }
