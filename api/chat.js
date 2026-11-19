@@ -268,13 +268,18 @@ module.exports = async function handler(req, res) {
         return send(res, 502, { error: "The semantic evidence audit was incomplete. No claims were released." });
       }
       const verdicts = new Map();
+      const conflictedVerdicts = new Set();
       for (const evaluation of audit.evaluations) {
         if (evaluation && Number.isInteger(evaluation.claim_index) && evaluation.claim_index >= 0 && evaluation.claim_index < verifiedClaims.length) {
-          verdicts.set(evaluation.claim_index,evaluation.verdict);
+          if (verdicts.has(evaluation.claim_index) && verdicts.get(evaluation.claim_index) !== evaluation.verdict) {
+            conflictedVerdicts.add(evaluation.claim_index);
+          } else {
+            verdicts.set(evaluation.claim_index,evaluation.verdict);
+          }
         }
       }
       // Missing, duplicate-conflicting, or non-supported verdicts fail closed.
-      semanticallyVerifiedClaims = verifiedClaims.filter((claim,index)=>verdicts.get(index)==="supported");
+      semanticallyVerifiedClaims = verifiedClaims.filter((claim,index)=>verdicts.get(index)==="supported" && !conflictedVerdicts.has(index));
       semanticRejectedCount = verifiedClaims.length - semanticallyVerifiedClaims.length;
     }
 
