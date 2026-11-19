@@ -92,7 +92,7 @@ async function extractFile(file){
       const page=await pdf.getPage(p);const content=await page.getTextContent();
       let text=content.items.map(x=>x.str||'').join(' ').trim();
       // OCR only pages without a usable text layer; preserve selectable text on other pages.
-      if(text.replace(/\\s/g,'').length<20){
+      if(text.replace(/\s/g,'').length<20){
         ocrPages++;
         document.getElementById('sourceStatus').textContent='Mengenali halaman '+p+' dari '+pdf.numPages+' dengan OCR…';
         text=await recognizePdfPage(page,p);
