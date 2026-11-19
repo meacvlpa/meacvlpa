@@ -29,17 +29,17 @@ node tests/run-semantic-eval.js --check
 Run the live model benchmark:
 
 ```bash
-OPENAI_API_KEY=... node tests/run-semantic-eval.js
+GEMINI_API_KEY=... node tests/run-semantic-eval.js
 ```
 
 On Windows PowerShell:
 
 ```powershell
-$env:OPENAI_API_KEY="..."
+$env:GEMINI_API_KEY="..."
 node tests/run-semantic-eval.js
 ```
 
-Optionally set `OPENAI_VERIFIER_MODEL`; otherwise the script uses `OPENAI_MODEL` or `gpt-4.1-mini`. Keep the API key in the local environment; never commit it to GitHub or paste it into chat.
+Optionally set `GEMINI_VERIFIER_MODEL`; otherwise the script uses `GEMINI_MODEL` or `gemini-2.5-flash-lite`. Keep the API key in the local environment; never commit it to GitHub or paste it into chat.
 
 ## Interpretation
 
