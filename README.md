@@ -68,3 +68,9 @@ OPENAI_MODEL=gpt-4.1-mini
 4. Bibliography metadata (author, title, editor, series, publication, year).
 5. Evaluation tests for semantic verification (supported, contradicted, partially supported, and unrelated claim cases), then Latin/Greek text alignment and translation comparison.
 6. Exportable notes and citation formats.
+
+## Academic evaluation benchmark
+
+A controlled semantic-evidence benchmark is available in `tests/`. It includes five labelled cases: fully supported, partially supported, contradicted, unrelated, and historically plausible but absent from the source. The fixture is explicitly fictional and must not be treated as historical evidence.
+
+Run `node tests/run-semantic-eval.js --check` to validate the fixture, or set `OPENAI_API_KEY` locally and run `node tests/run-semantic-eval.js` for a live model evaluation. See [tests/README.md](tests/README.md) for scope and limitations. The benchmark evaluates the semantic auditor prompt, not the full deployed chat pipeline.
