@@ -12,9 +12,44 @@ const MAX_TOTAL_CHARS=100000;
 
 function renderSources(){
   sourceCount.textContent=sources.length+' sumber';
-  if(!sources.length){sourceList.innerHTML='<div class="empty-state">Your sources will appear here.</div>';return;}
-  sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' text segments</small></div><button class="remove-source" data-index="'+i+'" aria-label="Remove source">×</button></div>').join('');
+  if(!sources.length){sourceList.innerHTML='<div class="empty-state">Sumber Anda akan muncul di sini.</div>';return;}
+  sourceList.innerHTML=sources.map((f,i)=>'<div class="source-item"><div class="file-icon">'+escapeHtml(f.ext)+'</div><div class="source-meta"><strong title="'+escapeHtml(f.name)+'">'+escapeHtml(f.name)+'</strong><small>'+formatSize(f.size)+' · '+f.chunks.length+' bagian teks</small><div class="source-actions"><button type="button" data-source-action="view" data-index="'+i+'">Lihat isi</button><button type="button" data-source-action="copy" data-index="'+i+'">Salin teks</button><button type="button" data-source-action="notes" data-index="'+i+'">Ke catatan</button></div></div><button class="remove-source" data-remove-index="'+i+'" aria-label="Hapus sumber">×</button></div>').join('');
 }
+const sourceViewer=document.getElementById('sourceViewer');
+const sourceViewerTitle=document.getElementById('sourceViewerTitle');
+const sourceViewerText=document.getElementById('sourceViewerText');
+function openSourceViewer(name,text){
+  sourceViewerTitle.textContent=name;
+  sourceViewerText.value=text;
+  sourceViewer.hidden=false;
+  sourceViewerText.scrollTop=0;
+}
+function closeSourceViewer(){sourceViewer.hidden=true;}
+async function copySourceText(text){
+  if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return;}
+  const temporary=document.createElement('textarea');
+  temporary.value=text;temporary.style.position='fixed';temporary.style.opacity='0';
+  document.body.appendChild(temporary);temporary.select();
+  const copied=document.execCommand('copy');temporary.remove();
+  if(!copied)throw new Error('Clipboard tidak tersedia');
+}
+function appendSourceToNotes(name,text){
+  const heading='\\n\\n---\\nTEKS SUMBER: '+name+'\\n---\\n';
+  notes.value=(notes.value.trimEnd()+heading+text).trimStart();
+  notes.dispatchEvent(new Event('input',{bubbles:true}));
+  closeSourceViewer();
+}
+document.getElementById('closeSourceViewer').addEventListener('click',closeSourceViewer);
+document.getElementById('copyViewerText').addEventListener('click',async()=>{
+  try{await copySourceText(sourceViewerText.value);document.getElementById('viewerStatus').textContent='Teks berhasil disalin.';}
+  catch(error){document.getElementById('viewerStatus').textContent='Tidak dapat menyalin otomatis. Pilih teks lalu salin secara manual.';}
+});
+document.getElementById('addViewerToNotes').addEventListener('click',()=>{
+  appendSourceToNotes(sourceViewerTitle.textContent,sourceViewerText.value);
+  document.getElementById('sourceStatus').textContent='Isi dokumen ditambahkan ke Catatan Riset.';
+});
+sourceViewer.addEventListener('click',e=>{if(e.target===sourceViewer)closeSourceViewer();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sourceViewer.hidden)closeSourceViewer();});
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function formatSize(n){return n<1024?n+' B':(n/1024).toFixed(1)+' KB';}
 function splitText(text,page=null){
@@ -63,7 +98,26 @@ async function addFiles(files){
   document.getElementById('sourceStatus').textContent=sources.length+' sumber siap digunakan untuk pertanyaan.';
 }
 fileInput.addEventListener('change',e=>{addFiles(e.target.files);fileInput.value='';});
-sourceList.addEventListener('click',e=>{const b=e.target.closest('[data-index]');if(b){sources.splice(Number(b.dataset.index),1);renderSources();saveActiveNotebook();}});
+sourceList.addEventListener('click',async e=>{
+  const action=e.target.closest('[data-source-action]');
+  if(action){
+    const source=sources[Number(action.dataset.index)];
+    if(!source)return;
+    const fullText=source.chunks.map(c=>c.text).join('\\n\\n');
+    if(action.dataset.sourceAction==='view')openSourceViewer(source.name,fullText);
+    if(action.dataset.sourceAction==='copy'){
+      try{await copySourceText(fullText);document.getElementById('sourceStatus').textContent='Teks '+source.name+' berhasil disalin.';}
+      catch(error){openSourceViewer(source.name,fullText);document.getElementById('sourceStatus').textContent='Salin otomatis tidak tersedia. Pilih dan salin teks dari jendela dokumen.';}
+    }
+    if(action.dataset.sourceAction==='notes'){
+      appendSourceToNotes(source.name,fullText);
+      document.getElementById('sourceStatus').textContent='Isi '+source.name+' ditambahkan ke Catatan Riset.';
+    }
+    return;
+  }
+  const remove=e.target.closest('[data-remove-index]');
+  if(remove){sources.splice(Number(remove.dataset.removeIndex),1);renderSources();saveActiveNotebook();}
+});
 dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.style.borderColor='#b18b58';});
 dropzone.addEventListener('dragleave',()=>dropzone.style.borderColor='');
 dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.style.borderColor='';addFiles(e.dataTransfer.files);});
