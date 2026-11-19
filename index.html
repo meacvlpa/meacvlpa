@@ -35,9 +35,11 @@
           <div class="panel-heading"><div><div class="eyebrow">AI RESEARCH STUDIO</div><h2>Ask your sources</h2></div><span class="beta">OPENAI</span></div>
           <div class="chat-intro"><div class="sparkle">✳</div><h3>What would you like to understand?</h3><p>Answers are generated from relevant passages extracted from your uploaded sources.</p></div>
           <div class="suggestions"><button class="suggestion">Summarize the main arguments in my sources</button><button class="suggestion">Compare the authors' understanding of penance</button><button class="suggestion">Find passages about spiritual healing</button></div>
-          <div class="chat-compose"><textarea id="questionInput" placeholder="Ask a question about your sources... (Ctrl + Enter to send)" rows="2"></textarea><button id="sendQuestion" aria-label="Send question">↑</button></div>
-          <div class="api-note"><span>✧</span> Source-grounded answers with source markers. AI requests are processed by the secure server endpoint; the API key is not exposed in the browser.</div>
           <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+          <div class="chat-input-dock">
+            <div class="chat-compose"><textarea id="questionInput" placeholder="Ask a question about your sources... (Enter to send, Shift + Enter for a new line)" rows="2"></textarea><button id="sendQuestion" aria-label="Send question">↑</button></div>
+            <div class="api-note"><span>✧</span> Source-grounded answers with source markers. AI requests are processed by the secure server endpoint; the API key is not exposed in the browser.</div>
+          </div>
         </div>
       </section>
       <section class="panel notes-panel" id="notes"><div class="panel-heading"><div><div class="eyebrow">YOUR THINKING</div><h2>Research notes</h2></div><span class="count">Private to this browser</span></div><textarea id="researchNotes" class="notes-editor" placeholder="Record observations, questions, references, and emerging arguments..."></textarea><div class="notes-footer"><span id="saveStatus">Notes are saved in this browser.</span><span>Keep thinking with the sources.</span></div></section>
