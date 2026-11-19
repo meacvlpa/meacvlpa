@@ -71,11 +71,29 @@ const notes=document.getElementById('researchNotes');notes.value=localStorage.ge
 let saveTimer;notes.addEventListener('input',()=>{document.getElementById('saveStatus').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem('paciana-notes',notes.value);document.getElementById('saveStatus').textContent='Saved in this browser';},350);});
 document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{questionInput.value=b.textContent;questionInput.focus();}));
 
-function addMessage(role,text){
+function addMessage(role,text,evidence=[],verification=null){
   const wrap=document.createElement('div');wrap.className='chat-message '+role;
   const label=document.createElement('strong');label.textContent=role==='user'?'You':'PACIANA';
   const body=document.createElement('div');body.className='message-body';body.textContent=text;
-  wrap.append(label,body);chatMessages.appendChild(wrap);wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+  wrap.append(label,body);
+  if(role==='assistant'&&Array.isArray(evidence)&&evidence.length){
+    const proofBox=document.createElement('section');proofBox.className='evidence-box';
+    const heading=document.createElement('strong');heading.className='evidence-heading';heading.textContent='Textual evidence — exact quote found in source';
+    proofBox.appendChild(heading);
+    evidence.forEach(item=>{
+      const proof=document.createElement('blockquote');proof.className='evidence-quote';
+      const quote=document.createElement('div');quote.textContent='“'+item.quote+'”';
+      const meta=document.createElement('small');meta.textContent='['+item.marker+'] '+item.source+(item.page?' — p. '+item.page:' — page unavailable');
+      proof.append(quote,meta);proofBox.appendChild(proof);
+    });
+    if(verification){
+      const note=document.createElement('p');note.className='verification-note';
+      note.textContent='Exact-quote check: '+verification.verified_claims+' claim(s) have quotations found in the supplied text. Claims without a matching quotation were excluded. Quote matching confirms textual presence; it does not by itself prove that an interpretation is correct.';
+      proofBox.appendChild(note);
+    }
+    wrap.appendChild(proofBox);
+  }
+  chatMessages.appendChild(wrap);wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 async function askQuestion(){
   const question=questionInput.value.trim();if(!question||busy)return;
@@ -88,11 +106,8 @@ async function askQuestion(){
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,sources:sources.map(s=>({name:s.name,chunks:s.chunks}))})});
     const data=await response.json();loading.remove();
     if(!response.ok)throw new Error(data.error||'The request failed.');
-    let answer=data.answer||'No answer was returned.';
-    if(data.citations&&data.citations.length){
-      answer+='\n\nRetrieved passages:\n'+data.citations.map(c=>'['+c.marker+'] '+c.source+(c.page?' — p. '+c.page:' — page unavailable')).join('\n');
-    }
-    addMessage('assistant',answer);
+    const answer=data.answer||'No answer was returned.';
+    addMessage('assistant',answer,data.evidence||[],data.verification||null);
   }catch(error){loading.remove();addMessage('assistant','Unable to answer: '+error.message);}
   finally{busy=false;sendButton.disabled=false;sendButton.textContent='↑';}
 }
