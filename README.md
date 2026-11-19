@@ -13,7 +13,9 @@ A source-grounded research workspace for Patristics and theology.
 - OpenAI Responses API integration through a server-side Vercel Function.
 - Strict source-only answering: uploaded excerpts are the exclusive factual authority; the model must not use pretrained/general knowledge to fill gaps.
 - AI role is limited to semantic organization, paraphrase, comparison, synthesis, translation when requested, and academic formatting of claims supported by the supplied excerpts.
-- Explicit abstention when the supplied sources do not contain sufficient evidence; citations required for substantive claims.
+- Structured claim-by-claim output: each claim must include a verbatim evidence quotation and source marker.
+- Server-side exact-quote verification: a claim is displayed only when its quoted evidence can be found in the retrieved source excerpt; unmatched claims are excluded.
+- The interface displays the exact evidence quotations used for each answer.
 - Research notes saved in the current browser.
 
 ## Deploy on Vercel
@@ -50,8 +52,9 @@ OPENAI_MODEL=gpt-4.1-mini
 - Retrieval is basic lexical matching, not embeddings/vector search.
 - Scanned PDFs need OCR and are not yet supported.
 - PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers, so citations identify the source without a page.
-- The answer model is explicitly prohibited from adding facts from pretrained/general knowledge and must abstain when the retrieved excerpts are insufficient. This is a prompt-level safeguard, not a mathematical guarantee; verify important claims, quotations, and references against the original edition.
+- The model is instructed to avoid all outside knowledge. Answers are returned as structured atomic claims with exact quotations. The server checks that each quotation occurs in the retrieved source text and excludes claims without a matching quotation. This exact-string check verifies that the quotation exists, not that the model's interpretation is logically entailed by it; academic review against the original edition remains necessary.
 - Retrieval currently uses lexical term matching. A relevant passage may fail to be retrieved if it uses different vocabulary; therefore, an answer that says evidence was not found means it was not found in the retrieved excerpts, not necessarily that no such evidence exists anywhere in the uploaded corpus.
+- Exact-quote verification does not establish semantic entailment. A quotation may exist but still be insufficient to support the generated interpretation; verify scholarly interpretations and translations manually.
 - Notes and notebook selections are currently browser-local; there is no login or cloud synchronization.
 - A lightweight per-instance rate limit is included. Add authentication and stronger abuse controls before public launch.
 
@@ -61,5 +64,5 @@ OPENAI_MODEL=gpt-4.1-mini
 2. Embedding-based semantic retrieval and hybrid search.
 3. OCR for scanned books and articles.
 4. Bibliography metadata (author, title, editor, series, publication, year).
-5. Latin/Greek text alignment, translation comparison, and quotation verification.
+5. Stronger semantic entailment review of each claim against its evidence, plus Latin/Greek text alignment and translation comparison.
 6. Exportable notes and citation formats.
