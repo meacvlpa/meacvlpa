@@ -251,6 +251,7 @@ function selectChunksForQuestion(question,allSources){
   let chosen;
   if(overview){chosen=[];const stride=Math.max(1,Math.ceil(all.length/MAX_CHAT_CHUNKS));for(let i=0;i<all.length&&chosen.length<MAX_CHAT_CHUNKS;i+=stride)chosen.push(all[i]);if(all.length&&chosen[chosen.length-1]!==all[all.length-1]&&chosen.length<MAX_CHAT_CHUNKS)chosen.push(all[all.length-1]);}
   else{const words=[...new Set((q.match(/[\p{L}\p{N}]{3,}/gu)||[]))];chosen=all.map(c=>{const body=c.text.toLocaleLowerCase('id');let score=0;for(const w of words)if(body.includes(w))score++;return {...c,score};}).filter(c=>c.score>0).sort((a,b)=>b.score-a.score).slice(0,MAX_CHAT_CHUNKS);}
+  if(!chosen.length)chosen=all.slice(0,3);
   const grouped=new Map();let total=0;
   for(const item of chosen){if(total>=MAX_CHAT_CHARS)break;const text=item.text.slice(0,Math.min(3500,MAX_CHAT_CHARS-total));if(!text)continue;if(!grouped.has(item.name))grouped.set(item.name,[]);grouped.get(item.name).push({page:item.page,text});total+=text.length;}
   return [...grouped.entries()].map(([name,chunks])=>({name,chunks}));
