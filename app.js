@@ -224,6 +224,32 @@ function addMessage(role,text,evidence=[],verification=null,retrieval=null){
 }
 async function askQuestion(){
   const question=questionInput.value.trim();if(!question||busy)return;
+  // Perintah dokumen diproses langsung dari teks lokal; tidak dikirim ke Gemini.
+  const command=question.toLocaleLowerCase('id');
+  const isDocumentCommand=/(tampilkan|lihat|buka|salin|masukkan|tambahkan).*(isi|teks).*(file|dokumen)/i.test(command);
+  if(isDocumentCommand){
+    const match=sources.find(s=>command.includes(s.name.toLocaleLowerCase('id')));
+    const generic=/file itu|dokumen itu|isi file|isi dokumen|teks file|teks dokumen/.test(command);
+    const source=match||(generic&&sources.length===1?sources[0]:null);
+    if(!sources.length){addMessage('assistant','Belum ada dokumen yang diunggah. Unggah dokumen terlebih dahulu.');questionInput.value='';return;}
+    if(!source){
+      addMessage('assistant',sources.length>1?'Ada beberapa dokumen. Sebutkan nama file yang dimaksud, atau gunakan tombol “Lihat isi” pada dokumen.':'Saya belum dapat mengenali nama dokumen. Gunakan tombol “Lihat isi” pada sumber yang dimaksud.');
+      questionInput.value='';return;
+    }
+    const fullText=source.chunks.map(c=>c.text).join('\\n\\n');
+    addMessage('user',question);questionInput.value='';
+    if(/salin/.test(command)){
+      try{await copySourceText(fullText);addMessage('assistant','Teks lengkap '+source.name+' telah disalin ke clipboard.');}
+      catch(error){openSourceViewer(source.name,fullText);addMessage('assistant','Silakan salin teks lengkap dokumen dari jendela yang terbuka.');}
+    }else if(/ke catatan|dalam catatan/.test(command)){
+      appendSourceToNotes(source.name,fullText);
+      addMessage('assistant','Seluruh teks '+source.name+' telah dimasukkan ke Catatan Riset. Tindakan ini menggunakan hasil ekstraksi lokal, tanpa AI.');
+    }else{
+      openSourceViewer(source.name,fullText);
+      addMessage('assistant','Saya membuka teks lengkap '+source.name+'. Teks ini berasal dari hasil ekstraksi lokal dokumen, bukan jawaban yang dihasilkan AI.');
+    }
+    return;
+  }
   if(!sources.length){addMessage('assistant','Unggah setidaknya satu sumber yang dapat dibaca sebelum mengajukan pertanyaan.');return;}
   const total=sources.reduce((n,s)=>n+s.chunks.reduce((m,c)=>m+c.text.length,0),0);
   if(total>MAX_TOTAL_CHARS){addMessage('assistant','Sumber yang dipilih memuat terlalu banyak teks untuk satu permintaan. Hapus beberapa dokumen atau gunakan berkas yang lebih pendek.');return;}
