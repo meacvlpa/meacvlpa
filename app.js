@@ -57,18 +57,83 @@ async function addFiles(files){
       if(!chunks.length){alert('No selectable text was found in '+file.name+'. Scanned PDFs need OCR, which is not available yet.');continue;}
       sources.push({name:file.name,size:file.size,ext:ext.toUpperCase(),chunks});
       renderSources();
+      saveActiveNotebook();
     }catch(error){alert('Could not read '+file.name+': '+error.message);}
   }
   document.getElementById('sourceStatus').textContent=sources.length+' readable source(s) ready for questions.';
 }
 fileInput.addEventListener('change',e=>{addFiles(e.target.files);fileInput.value='';});
-sourceList.addEventListener('click',e=>{const b=e.target.closest('[data-index]');if(b){sources.splice(Number(b.dataset.index),1);renderSources();}});
+sourceList.addEventListener('click',e=>{const b=e.target.closest('[data-index]');if(b){sources.splice(Number(b.dataset.index),1);renderSources();saveActiveNotebook();}});
 dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.style.borderColor='#b18b58';});
 dropzone.addEventListener('dragleave',()=>dropzone.style.borderColor='');
 dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.style.borderColor='';addFiles(e.dataTransfer.files);});
 
-const notes=document.getElementById('researchNotes');notes.value=localStorage.getItem('paciana-notes')||'';
-let saveTimer;notes.addEventListener('input',()=>{document.getElementById('saveStatus').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem('paciana-notes',notes.value);document.getElementById('saveStatus').textContent='Saved in this browser';},350);});
+const notes=document.getElementById('researchNotes');
+let saveTimer;
+const NOTEBOOKS_KEY='paciana-notebooks-v1';
+let notebooks=[];
+let activeNotebookId='';
+function persistNotebooks(){
+  try{localStorage.setItem(NOTEBOOKS_KEY,JSON.stringify(notebooks));}
+  catch(error){console.warn('Could not save notebook data in this browser:',error);}
+}
+function saveActiveNotebook(){
+  const active=notebooks.find(n=>n.id===activeNotebookId);
+  if(!active)return;
+  active.sources=sources;
+  active.notes=notes.value;
+  active.chatHTML=chatMessages.innerHTML;
+  persistNotebooks();
+}
+function renderNotebookList(){
+  const list=document.getElementById('notebookList');
+  list.innerHTML='';
+  notebooks.forEach(notebook=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='notebook-link'+(notebook.id===activeNotebookId?' selected':'');
+    button.dataset.notebookId=notebook.id;
+    const dot=document.createElement('span');dot.className='notebook-dot';
+    const label=document.createElement('span');label.textContent=notebook.name;
+    button.append(dot,label);list.appendChild(button);
+  });
+}
+function activateNotebook(id){
+  if(busy||id===activeNotebookId)return;
+  saveActiveNotebook();
+  const target=notebooks.find(n=>n.id===id);
+  if(!target)return;
+  activeNotebookId=target.id;
+  sources=Array.isArray(target.sources)?target.sources:[];
+  notes.value=target.notes||'';
+  chatMessages.innerHTML=target.chatHTML||'';
+  document.getElementById('currentNotebook').textContent=target.name;
+  document.getElementById('sourceStatus').textContent=sources.length+' readable source(s) ready for questions.';
+  document.getElementById('saveStatus').textContent='Notes are saved in this browser.';
+  renderSources();
+  renderNotebookList();
+  questionInput.value='';
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+  persistNotebooks();
+}
+try{
+  const saved=JSON.parse(localStorage.getItem(NOTEBOOKS_KEY)||'null');
+  if(Array.isArray(saved))notebooks=saved.filter(n=>n&&typeof n.id==='string'&&typeof n.name==='string');
+}catch(error){notebooks=[];}
+if(!notebooks.length)notebooks=[{id:'pacianus-default',name:'Pacianus of Barcelona',sources:[],notes:'',chatHTML:''}];
+activeNotebookId=notebooks[0].id;
+notes.value=notebooks[0].notes||'';
+document.getElementById('currentNotebook').textContent=notebooks[0].name;
+renderNotebookList();
+let saveTimerId;
+notes.addEventListener('input',()=>{
+  document.getElementById('saveStatus').textContent='Saving…';
+  clearTimeout(saveTimerId);
+  saveTimerId=setTimeout(()=>{
+    saveActiveNotebook();
+    document.getElementById('saveStatus').textContent='Saved in this browser';
+  },350);
+});
 document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{questionInput.value=b.textContent;questionInput.focus();}));
 
 function addMessage(role,text,evidence=[],verification=null,retrieval=null){
@@ -99,7 +164,9 @@ function addMessage(role,text,evidence=[],verification=null,retrieval=null){
     }
     wrap.appendChild(proofBox);
   }
-  chatMessages.appendChild(wrap);wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+  chatMessages.appendChild(wrap);
+  saveActiveNotebook();
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 async function askQuestion(){
   const question=questionInput.value.trim();if(!question||busy)return;
@@ -119,13 +186,22 @@ async function askQuestion(){
 }
 sendButton.addEventListener('click',askQuestion);
 questionInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askQuestion();}});
+document.getElementById('notebookList').addEventListener('click',event=>{
+  const button=event.target.closest('[data-notebook-id]');
+  if(button)activateNotebook(button.dataset.notebookId);
+});
 document.getElementById('newNotebook').addEventListener('click',()=>{
-  const name=prompt('Name your notebook:');if(!name||!name.trim())return;
-  const b=document.createElement('button');b.className='notebook-link';b.innerHTML='<span class="notebook-dot"></span><span></span>';b.querySelector('span:last-child').textContent=name.trim();
-  document.getElementById('notebookList').appendChild(b);document.getElementById('currentNotebook').textContent=name.trim();
-  document.querySelectorAll('.notebook-link').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');
+  if(busy)return;
+  const name=prompt('Name your notebook:');
+  if(!name||!name.trim())return;
+  saveActiveNotebook();
+  const notebook={id:'nb-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name:name.trim(),sources:[],notes:'',chatHTML:''};
+  notebooks.push(notebook);
+  persistNotebooks();
+  activateNotebook(notebook.id);
 });
 renderSources();
+persistNotebooks();
 
 
 // Resizable layout: sidebar and source/studio split persist in this browser.
