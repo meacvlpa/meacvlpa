@@ -34,7 +34,7 @@ async function copySourceText(text){
   if(!copied)throw new Error('Clipboard tidak tersedia');
 }
 function appendSourceToNotes(name,text){
-  const heading='\\n\\n---\\nTEKS SUMBER: '+name+'\\n---\\n';
+  const heading='\n\n---\nTEKS SUMBER: '+name+'\n---\n';
   notes.value=(notes.value.trimEnd()+heading+text).trimStart();
   notes.dispatchEvent(new Event('input',{bubbles:true}));
   closeSourceViewer();
@@ -103,7 +103,7 @@ sourceList.addEventListener('click',async e=>{
   if(action){
     const source=sources[Number(action.dataset.index)];
     if(!source)return;
-    const fullText=source.chunks.map(c=>c.text).join('\\n\\n');
+    const fullText=source.chunks.map(c=>c.text).join('\n\n');
     if(action.dataset.sourceAction==='view')openSourceViewer(source.name,fullText);
     if(action.dataset.sourceAction==='copy'){
       try{await copySourceText(fullText);document.getElementById('sourceStatus').textContent='Teks '+source.name+' berhasil disalin.';}
@@ -236,7 +236,7 @@ async function askQuestion(){
       addMessage('assistant',sources.length>1?'Ada beberapa dokumen. Sebutkan nama file yang dimaksud, atau gunakan tombol “Lihat isi” pada dokumen.':'Saya belum dapat mengenali nama dokumen. Gunakan tombol “Lihat isi” pada sumber yang dimaksud.');
       questionInput.value='';return;
     }
-    const fullText=source.chunks.map(c=>c.text).join('\\n\\n');
+    const fullText=source.chunks.map(c=>c.text).join('\n\n');
     addMessage('user',question);questionInput.value='';
     if(/salin/.test(command)){
       try{await copySourceText(fullText);addMessage('assistant','Teks lengkap '+source.name+' telah disalin ke clipboard.');}
