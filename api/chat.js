@@ -1,5 +1,5 @@
 const MAX_BODY_CHARS = 120000;
-const MAX_SOURCES = 20;
+const MAX_SOURCES = 100;
 const MAX_CHUNKS = 80;
 const MAX_REQUESTS_PER_MINUTE = 12;
 const requestCounts = new Map();
