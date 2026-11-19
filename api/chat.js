@@ -181,13 +181,11 @@ module.exports = async function handler(req, res) {
 
     const schema = {
       type: "object",
-      additionalProperties: false,
       properties: {
         claims: {
           type: "array",
           items: {
             type: "object",
-            additionalProperties: false,
             properties: {
               text: { type: "string" },
               claim_kind: { type: "string", enum: ["explicit", "interpretation"] },
@@ -195,7 +193,6 @@ module.exports = async function handler(req, res) {
                 type: "array",
                 items: {
                   type: "object",
-                  additionalProperties: false,
                   properties: {
                     marker: { type: "string" },
                     quote: { type: "string" }
@@ -271,13 +268,11 @@ module.exports = async function handler(req, res) {
     if (verifiedClaims.length) {
       const verifierSchema = {
         type: "object",
-        additionalProperties: false,
         properties: {
           evaluations: {
             type: "array",
             items: {
               type: "object",
-              additionalProperties: false,
               properties: {
                 claim_index: { type: "integer" },
                 verdict: { type: "string", enum: ["supported", "unsupported"] }
