@@ -130,10 +130,9 @@ module.exports = async function handler(req, res) {
             },
             required: ["text", "claim_kind", "evidence"]
           }
-        },
-        answer_note: { type: "string" }
+        }
       },
-      required: ["claims", "answer_note"]
+      required: ["claims"]
     };
 
     const response = await fetch("https://api.openai.com/v1/responses", {
