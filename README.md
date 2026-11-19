@@ -11,7 +11,9 @@ A source-grounded research workspace for Patristics and theology.
 - PDF extraction preserves page numbers.
 - Basic lexical retrieval ranks passages relevant to the question.
 - OpenAI Responses API integration through a server-side Vercel Function.
-- Academic system instructions: source-only answers, explicit uncertainty, and no invented quotations or page references.
+- Strict source-only answering: uploaded excerpts are the exclusive factual authority; the model must not use pretrained/general knowledge to fill gaps.
+- AI role is limited to semantic organization, paraphrase, comparison, synthesis, translation when requested, and academic formatting of claims supported by the supplied excerpts.
+- Explicit abstention when the supplied sources do not contain sufficient evidence; citations required for substantive claims.
 - Research notes saved in the current browser.
 
 ## Deploy on Vercel
@@ -48,7 +50,8 @@ OPENAI_MODEL=gpt-4.1-mini
 - Retrieval is basic lexical matching, not embeddings/vector search.
 - Scanned PDFs need OCR and are not yet supported.
 - PDF page numbers are retained. DOCX, TXT, and Markdown do not have reliable page numbers, so citations identify the source without a page.
-- The answer model is instructed to cite retrieved source markers. Always verify quotations and references against the original edition.
+- The answer model is explicitly prohibited from adding facts from pretrained/general knowledge and must abstain when the retrieved excerpts are insufficient. This is a prompt-level safeguard, not a mathematical guarantee; verify important claims, quotations, and references against the original edition.
+- Retrieval currently uses lexical term matching. A relevant passage may fail to be retrieved if it uses different vocabulary; therefore, an answer that says evidence was not found means it was not found in the retrieved excerpts, not necessarily that no such evidence exists anywhere in the uploaded corpus.
 - Notes and notebook selections are currently browser-local; there is no login or cloud synchronization.
 - A lightweight per-instance rate limit is included. Add authentication and stronger abuse controls before public launch.
 
